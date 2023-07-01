@@ -1,5 +1,6 @@
 #include "main.h"
 #include "portSupervisor.h"
+#include "vault.h"
 
 /** @brief Private Variables */
 static const char *TAG = "MAIN";
@@ -7,12 +8,14 @@ static const char *TAG = "MAIN";
 
 /***** create a sample configuration *************/
 // struct config_st config = { .portnumber = 1, .startTime = 1670000, .stopTime = 1671000, .flowQuantity = 200 };
-struct config_st config = { 1, 1000, 1000, 100 };       // This initialization worked ??
+// struct config_st config = { 1, 1000, 1000, 100 };       // This initialization worked ??
 /************************************************/
 
 extern "C" void app_main(void);
 Main App;
 PortSupervisor::Supervisor portMan;
+PortSupervisor::Result result = PortSupervisor::Result::ERR;
+Vault::Result res = Vault::Result::ERR;
 Irrigator::System application;
 time_t now;
 static struct timeval nowTime = {.tv_sec = 1683994547,};
@@ -106,8 +109,13 @@ void Main::run(void)
     ESP_LOGI(TAG, "time %lld", (long long)now);
     uint32_t loop = 50;
     while(loop--) {
-        if(PortSupervisor::Result::ERR == portMan.runPortCheck()) {
+        result = portMan.runPortCheck();
+        if(result == PortSupervisor::Result::ERR) {
             ESP_LOGI(TAG, "Error running portCheck");
+        }
+        else if(result == PortSupervisor::Result::OK_PORTLIST_NEEDS_SAVING) {
+            res = Vault::setVaultData(portMan);
+            ESP_LOGI(TAG, "Result of Storage Write: %d", (unsigned int)res);
         }
         vTaskDelay(1000 / portTICK_RATE_MS);
     }
@@ -120,8 +128,16 @@ void Main::run(void)
 
 void Main::setup(void)
 {
+    Vault::Result res = Vault::Result::ERR;
     esp_event_loop_create_default();
-    nvs_flash_init();
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        // NVS partition was truncated and needs to be erased
+        // Retry nvs_flash_init
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK( err );
 
     application.initialize();
     
@@ -140,8 +156,14 @@ void Main::setup(void)
          * Pass the parameters from a config file readout here
          */
         portMan.addPort(1, 200, 200, 100, enableSolenoid, disableSolenoid);
+        
+        res = Vault::setVaultData(portMan);
+        ESP_LOGI(TAG, "Result of Storage Write: %d", (unsigned int)res);
 
     }
+
+    res = Vault::getVaultData(portMan);
+    ESP_LOGI(TAG, "Result of Storage Read: %d", (unsigned int)res);
     
     rtc_gpio_isolate(GPIO_NUM_12);
 }

@@ -14,6 +14,12 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NON_VOLATILE_STORAGE	"nvs"
 
 void nvs_erase();
@@ -60,5 +66,12 @@ esp_err_t nvs_read_string(const char* key, char* data, size_t len);
 
 void nvs_write_string(const char* key, char* data, size_t len);
 
+esp_err_t nvs_read_chunk(const char* key, void* data, size_t len);
+
+void nvs_write_chunk(const char* key, const void* data, size_t len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMPONENTS_NON_VOLATILE_STORAGE_NON_VOLATILE_STORAGE_H_ */

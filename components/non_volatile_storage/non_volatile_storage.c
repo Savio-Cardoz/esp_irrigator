@@ -8,7 +8,7 @@
 #include "esp_err.h"
 #include "non_volatile_storage.h"
 
-static const char *TAG = "non_volatile_storage";
+// static const char *TAG = "non_volatile_storage";
 
 void nvs_erase()
 {
@@ -213,6 +213,36 @@ esp_err_t nvs_read_string(const char* key, char* data, size_t len) {
 }
 
 void nvs_write_string(const char* key, char* data, size_t len)
+{
+	nvs_handle_t my_handle;
+	nvs_open(NON_VOLATILE_STORAGE, NVS_READWRITE, &my_handle);
+	nvs_set_blob( my_handle, key, data, len);
+	nvs_commit(my_handle);
+	nvs_close(my_handle);
+}
+
+esp_err_t nvs_read_chunk(const char* key, void* data, size_t len) {
+	nvs_handle_t handler;
+	esp_err_t err;
+
+	nvs_open(NON_VOLATILE_STORAGE, NVS_READONLY, &handler);
+	
+	size_t length = 0;
+    err = nvs_get_blob(handler, key, NULL, &length);        // Read the length of the ssid string in NVS
+    if ( (err == ESP_ERR_NVS_NOT_FOUND) || (err != ESP_OK) ){
+		nvs_close(handler);
+        return err;
+    }
+    
+    if ( len < length )		// Checking if the length of the string in NVS (length) can be accomodated in the size of the data buffer
+		return ESP_FAIL;
+
+    err = nvs_get_blob(handler, key, data, &length);
+	nvs_close(handler);
+	return err;
+}
+
+void nvs_write_chunk(const char* key, const void* data, size_t len)
 {
 	nvs_handle_t my_handle;
 	nvs_open(NON_VOLATILE_STORAGE, NVS_READWRITE, &my_handle);

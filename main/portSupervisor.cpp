@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <iostream>
 #include "portSupervisor.h"
+#include "vault.h"
 
 static const char *TAG = "PortSupervisor";
 
@@ -66,6 +67,7 @@ PortSupervisor::Result PortSupervisor::Supervisor::runPortCheck() {
             // ESP_LOGI(TAG, "Time now: %d, swichtime: %d", (uint32_t)now, port.getSwitchTime());
             if(port.getSwitchTime() <= (uint32_t)now) {
                 port.portSwitchState();
+                result = PortSupervisor::Result::OK_PORTLIST_NEEDS_SAVING;
             }
         }
     }

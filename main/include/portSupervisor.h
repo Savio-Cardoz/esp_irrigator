@@ -9,7 +9,8 @@
 namespace PortSupervisor {
     enum Result {
         OK,
-        ERR
+        ERR,
+        OK_PORTLIST_NEEDS_SAVING
     };
 
     /*! \class Port
@@ -21,7 +22,7 @@ namespace PortSupervisor {
         port.
     */
     class Port {
-    private:
+    public:
         uint8_t portNumber_u8;
         uint32_t switchTime_u32;
         portState_t portState_e;
@@ -31,7 +32,6 @@ namespace PortSupervisor {
         uint32_t duration;
         void (*openPort)(portMap_t number);
         void (*closePort)(portMap_t number);
-    public:
         bool b_portEnabled;
         Port(uint8_t, uint16_t, uint32_t, uint32_t, void (*)(portMap_t), void (*)(portMap_t));
         void portSwitchState();
@@ -40,9 +40,9 @@ namespace PortSupervisor {
     };
 
     class Supervisor {
-        std::vector<Port> portList;
-
         public:
+            std::vector<Port> portList;
+        
             /**
              * Add Port object to the system port list
              * @param portNum Should be an enum.
@@ -57,11 +57,11 @@ namespace PortSupervisor {
 
             /*
             */
-           PortSupervisor::Result runPortCheck();
+            PortSupervisor::Result runPortCheck();
 
-           /*
-           */
-          uint32_t getNextPortTriggerTime();
+            /*
+            */
+            uint32_t getNextPortTriggerTime();
     };
 
 

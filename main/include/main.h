@@ -21,14 +21,6 @@
 #include "driver/adc.h"
 #include "driver/rtc_io.h"
 
-struct config_st {
-    unsigned short portNumber;
-    unsigned int startTime;
-    unsigned int stopTime;
-    unsigned int flowQuantity;
-    struct config_st* next;
-};
-
 namespace Irrigator {
     class System {
         private:

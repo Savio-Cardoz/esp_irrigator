@@ -1,3 +1,5 @@
+#include <string>
+#include <algorithm>
 #include "app_wifi.h"
 
 namespace WIFI
@@ -8,6 +10,7 @@ namespace WIFI
     Wifi::state_e Wifi::_state{state_e::NOT_INITIALIZED};
     wifi_init_config_t Wifi::_wifi_init_cfg = WIFI_INIT_CONFIG_DEFAULT();
     wifi_config_t Wifi::_wifi_cfg{};
+    wifi_config_t Wifi::_wifi_ap_config{};
 
     // Wifi Contrustor
     Wifi::Wifi(void)
@@ -16,7 +19,7 @@ namespace WIFI
         {
             if (ESP_OK != _get_mac())
             {
-                esp_restart();
+                // esp_restart();
             }
         }
     }
@@ -130,8 +133,9 @@ namespace WIFI
             if (ESP_OK == status)
             {
                 const esp_netif_t *const p_netif = esp_netif_create_default_wifi_sta();
+                const esp_netif_t *const ap_netif = esp_netif_create_default_wifi_ap();
 
-                if (!p_netif)
+                if (!p_netif || !ap_netif)
                 {
                     status = ESP_FAIL;
                 }
@@ -162,7 +166,8 @@ namespace WIFI
 
             if (ESP_OK == status)
             {
-                status = esp_wifi_set_mode(WIFI_MODE_STA);
+                // status = esp_wifi_set_mode(WIFI_MODE_STA);
+                status = esp_wifi_set_mode(WIFI_MODE_APSTA);
             }
 
             if (ESP_OK == status)
@@ -172,6 +177,22 @@ namespace WIFI
                 _wifi_cfg.sta.pmf_cfg.required = false;
 
                 status = esp_wifi_set_config(WIFI_IF_STA, &_wifi_cfg);
+            }
+
+            if (ESP_OK == status)
+            {
+                // _wifi_ap_config.ap.ssid = CONFIG_ESP_WIFI_AP_SSID;
+                // _wifi_ap_config.ap.password = CONFIG_ESP_WIFI_AP_PASSWORD;
+                
+                std::string apSsid(CONFIG_ESP_WIFI_AP_SSID);
+                std::string apPassword(CONFIG_ESP_WIFI_AP_PASSWORD);
+
+                memcpy(_wifi_ap_config.ap.ssid, apSsid.c_str(), apSsid.length());
+                memcpy(_wifi_ap_config.ap.password, apPassword.c_str(), apPassword.length());
+                
+                _wifi_ap_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
+                _wifi_ap_config.ap.max_connection = 2;
+                status = esp_wifi_set_config(WIFI_IF_AP, &_wifi_ap_config);
             }
 
             if (ESP_OK == status)
@@ -196,7 +217,6 @@ namespace WIFI
     void Wifi::SetCredentials(const char *ssid, const char *password)
     {
         memcpy(_wifi_cfg.sta.ssid, ssid, std::min(strlen(ssid), sizeof(_wifi_cfg.sta.ssid)));
-
         memcpy(_wifi_cfg.sta.password, password, std::min(strlen(password), sizeof(_wifi_cfg.sta.password)));
     }
 
@@ -210,7 +230,7 @@ namespace WIFI
     {
         uint8_t mac_byte_buffer[6]{};
 
-        const esp_err_t status{esp_efuse_mac_get_default(mac_byte_buffer)};
+        const esp_err_t status{esp_wifi_get_mac(WIFI_IF_STA, mac_byte_buffer)};
 
         if (ESP_OK == status)
         {

@@ -34,7 +34,7 @@ esp_err_t I2C::write(uint8_t slave_address, uint8_t* tx_buff, uint8_t num_of_byt
     i2c_master_write_byte(cmd, (slave_address << 1) | WRITE_BIT, ACK_CHECK_EN);
     i2c_master_write(cmd, tx_buff, num_of_bytes, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
     return ret;
 }
@@ -51,7 +51,7 @@ esp_err_t I2C::read(uint8_t slave_address, uint8_t* rx_buff, uint8_t num_of_byte
     }
     i2c_master_read_byte(cmd, rx_buff + num_of_bytes - 1, NACK_VAL);
     i2c_master_stop(cmd);
-    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_RATE_MS);
+    esp_err_t ret = i2c_master_cmd_begin(i2c_port, cmd, 1000 / portTICK_PERIOD_MS);
     i2c_cmd_link_delete(cmd);
     return ret;
 }

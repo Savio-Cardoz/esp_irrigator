@@ -47,7 +47,7 @@ int EpdIf::DigitalRead(unsigned int pin) {
 }
 
 void EpdIf::DelayMs(unsigned int delaytime) {
-    vTaskDelay(delaytime / portTICK_RATE_MS);
+    vTaskDelay(delaytime / portTICK_PERIOD_MS);
 }
 
 void EpdIf::SpiTransfer(unsigned char data) {
@@ -68,8 +68,8 @@ int EpdIf::IfInit(void) {
     
     if(spi) {
 		spi_bus_remove_device(spi);
+        spi_bus_free(APP_SPI_HOST);
 	}
-	// spi_bus_free(SPI_HOST);
     
     gpio_config_t io_conf = {0};
     io_conf.intr_type = GPIO_INTR_DISABLE;
@@ -97,7 +97,7 @@ int EpdIf::IfInit(void) {
     buscfg.quadhd_io_num = -1;
 
     //Initialize the SPI bus
-    ret=spi_bus_initialize(SPI_HOST, &buscfg, 0);
+    ret=spi_bus_initialize(APP_SPI_HOST, &buscfg, 0);
     switch (ret) {
         case ESP_ERR_INVALID_ARG:
             ESP_LOGE("EPDIF", "INVALID ARG");
@@ -124,7 +124,7 @@ int EpdIf::IfInit(void) {
     devcfg.queue_size = 1;
 
     //Attach the EPD to the SPI bus
-    ret=spi_bus_add_device(SPI_HOST, &devcfg, &spi);
+    ret=spi_bus_add_device(APP_SPI_HOST, &devcfg, &spi);
     assert(ret==ESP_OK);
 
     return 0;

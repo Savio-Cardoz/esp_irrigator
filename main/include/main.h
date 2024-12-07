@@ -20,42 +20,34 @@
 #include "esp_sleep.h"
 #include "driver/adc.h"
 #include "driver/rtc_io.h"
+#include "http_server.h"
 
-namespace Irrigator {
-    class System {
-        private:
-            static uint8_t count;
-            uint32_t sleepEnterTime;
-        public:
-            void initialize();
-            void checkWifiState();
-            void checkEnvState();
-
-            /**
-             * Reference the element at the front of the portlist to get the switchTime attribute
-             * to set the duration of sleep from current tiime
-            */
-            void deepSleep(uint32_t sleepDuration);
-            void setSleepEnterTime(uint32_t);
-            uint32_t getSleepEnterTime();
-
-            WIFI::Wifi::state_e wifiState { WIFI::Wifi::state_e::NOT_INITIALIZED };
-            WIFI::Wifi Wifi;
-
-            DHT20 env_sensor;
-    };
-}   // namespace Irrigator
-
-class Main final
+namespace Irrigator
 {
-private:
-public:
-    void run(void);
-    void setup(void);
+    class System
+    {
+    private:
+        static uint8_t count;
+        uint32_t sleepEnterTime;
+        http_server _server;
 
-    // WIFI::Wifi::state_e wifiState { WIFI::Wifi::state_e::NOT_INITIALIZED };
-    // WIFI::Wifi Wifi;
+    public:
+        void initialize();
+        void checkWifiState();
+        void updateEnvInfo();
 
-    // DHT20 env_sensor;
-    // Display display;
-};
+        /**
+         * Reference the element at the front of the portlist to get the switchTime attribute
+         * to set the duration of sleep from current tiime
+         */
+        void deepSleep(uint32_t sleepDuration);
+        void setSleepEnterTime(uint32_t);
+        uint32_t getSleepEnterTime();
+
+        WIFI::Wifi::state_e wifiState{WIFI::Wifi::state_e::NOT_INITIALIZED};
+        WIFI::Wifi Wifi;
+
+        DHT20 env_sensor;
+        Display display;
+    };
+} // namespace Irrigator

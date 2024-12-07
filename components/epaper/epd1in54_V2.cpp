@@ -31,8 +31,7 @@
 #include "esp_log.h"
 #include "epd1in54_V2.h"
 
-Epd::~Epd()
-{
+Epd::~Epd() {
 };
 
 Epd::Epd()
@@ -68,7 +67,8 @@ void Epd::SendData(unsigned char data)
  */
 void Epd::WaitUntilIdle(void)
 {
-	while(DigitalRead(busy_pin) == 1) {      //LOW: idle, HIGH: busy
+	while (DigitalRead(busy_pin) == 1)
+	{ // LOW: idle, HIGH: busy
 		DelayMs(100);
 	}
 	DelayMs(200);
@@ -77,35 +77,36 @@ void Epd::WaitUntilIdle(void)
 int Epd::HDirInit(void)
 {
 	/* this calls the peripheral hardware interface, see epdif */
-	if (IfInit() != 0) {
+	if (IfInit() != 0)
+	{
 		return -1;
 	}
 	/* EPD hardware init start */
 	Reset();
 
 	WaitUntilIdle();
-	SendCommand(0x12);  //SWRESET
+	SendCommand(0x12); // SWRESET
 	WaitUntilIdle();
 
-	SendCommand(0x01); //Driver output control
+	SendCommand(0x01); // Driver output control
 	SendData(0xC7);
 	SendData(0x00);
 	SendData(0x01);
 
-	SendCommand(0x11); //data entry mode
+	SendCommand(0x11); // data entry mode
 	SendData(0x01);
 
-	SendCommand(0x44); //set Ram-X address start/end position
+	SendCommand(0x44); // set Ram-X address start/end position
 	SendData(0x00);
-	SendData(0x18);    //0x0C-->(18+1)*8=200
+	SendData(0x18); // 0x0C-->(18+1)*8=200
 
-	SendCommand(0x45); //set Ram-Y address start/end position
-	SendData(0xC7);   //0xC7-->(199+1)=200
+	SendCommand(0x45); // set Ram-Y address start/end position
+	SendData(0xC7);	   // 0xC7-->(199+1)=200
 	SendData(0x00);
 	SendData(0x00);
 	SendData(0x00);
 
-	SendCommand(0x3C); //BorderWavefrom
+	SendCommand(0x3C); // BorderWavefrom
 	SendData(0x01);
 
 	SendCommand(0x18);
@@ -115,9 +116,9 @@ int Epd::HDirInit(void)
 	SendData(0XB1);
 	SendCommand(0x20);
 
-	SendCommand(0x4E);   // set RAM x address count to 0;
+	SendCommand(0x4E); // set RAM x address count to 0;
 	SendData(0x00);
-	SendCommand(0x4F);   // set RAM y address count to 0X199;
+	SendCommand(0x4F); // set RAM y address count to 0X199;
 	SendData(0xC7);
 	SendData(0x00);
 	WaitUntilIdle();
@@ -129,35 +130,36 @@ int Epd::HDirInit(void)
 int Epd::LDirInit(void)
 {
 	/* this calls the peripheral hardware interface, see epdif */
-	if (IfInit() != 0) {
+	if (IfInit() != 0)
+	{
 		return -1;
 	}
 	/* EPD hardware init start */
 	Reset();
 
 	WaitUntilIdle();
-	SendCommand(0x12);  //SWRESET
+	SendCommand(0x12); // SWRESET
 	WaitUntilIdle();
 
-	SendCommand(0x01); //Driver output control
+	SendCommand(0x01); // Driver output control
 	SendData(0xC7);
 	SendData(0x00);
 	SendData(0x00);
 
-	SendCommand(0x11); //data entry mode
+	SendCommand(0x11); // data entry mode
 	SendData(0x03);
 
-  SendCommand(0x44);
-  /* x point must be the multiple of 8 or the last 3 bits will be ignored */
-  SendData((0 >> 3) & 0xFF);
-  SendData((200 >> 3) & 0xFF);
-  SendCommand(0x45);
-  SendData(0 & 0xFF);
-  SendData((0 >> 8) & 0xFF);
-  SendData(200 & 0xFF);
-  SendData((200 >> 8) & 0xFF);
+	SendCommand(0x44);
+	/* x point must be the multiple of 8 or the last 3 bits will be ignored */
+	SendData((0 >> 3) & 0xFF);
+	SendData((200 >> 3) & 0xFF);
+	SendCommand(0x45);
+	SendData(0 & 0xFF);
+	SendData((0 >> 8) & 0xFF);
+	SendData(200 & 0xFF);
+	SendData((200 >> 8) & 0xFF);
 
-	SendCommand(0x3C); //BorderWavefrom
+	SendCommand(0x3C); // BorderWavefrom
 	SendData(0x01);
 
 	SendCommand(0x18);
@@ -167,9 +169,9 @@ int Epd::LDirInit(void)
 	SendData(0XB1);
 	SendCommand(0x20);
 
-	SendCommand(0x4E);   // set RAM x address count to 0;
+	SendCommand(0x4E); // set RAM x address count to 0;
 	SendData(0x00);
-	SendCommand(0x4F);   // set RAM y address count to 0X199;
+	SendCommand(0x4F); // set RAM y address count to 0X199;
 	SendData(0xC7);
 	SendData(0x00);
 	WaitUntilIdle();
@@ -177,8 +179,6 @@ int Epd::LDirInit(void)
 
 	return 0;
 }
-
-
 
 /**
  *  @brief: module reset.
@@ -189,7 +189,7 @@ void Epd::Reset(void)
 {
 	DigitalWrite(reset_pin, HIGH);
 	DelayMs(200);
-	DigitalWrite(reset_pin, LOW);                //module reset
+	DigitalWrite(reset_pin, LOW); // module reset
 	DelayMs(10);
 	DigitalWrite(reset_pin, HIGH);
 	DelayMs(200);
@@ -198,65 +198,75 @@ void Epd::Reset(void)
 void Epd::Clear(void)
 {
 	int w, h;
-	w = (EPD_WIDTH % 8 == 0)? (EPD_WIDTH / 8 ): (EPD_WIDTH / 8 + 1);
+	w = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
 	h = EPD_HEIGHT;
- 
+
 	SendCommand(0x24);
-	for (int j = 0; j < h; j++) {
-		for (int i = 0; i < w; i++) {
+	for (int j = 0; j < h; j++)
+	{
+		for (int i = 0; i < w; i++)
+		{
 			SendData(0xff);
 		}
 	}
-	//DISPLAY REFRESH
+	// DISPLAY REFRESH
 	SendCommand(0x22);
 	SendData(0xF7);
 	SendCommand(0x20);
 	WaitUntilIdle();
 }
 
-void Epd::Display(const unsigned char* frame_buffer)
+void Epd::Display(const unsigned char *frame_buffer)
 {
-	int w = (EPD_WIDTH % 8 == 0)? (EPD_WIDTH / 8 ): (EPD_WIDTH / 8 + 1);
+	int w = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
 	int h = EPD_HEIGHT;
 
-	if (frame_buffer != NULL) {
+	if (frame_buffer != NULL)
+	{
 		SendCommand(0x24);
-		for (int j = 0; j < h; j++) {
-			for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++)
+		{
+			for (int i = 0; i < w; i++)
+			{
 				SendData(frame_buffer[i + j * w]);
 			}
 		}
 	}
 
-	//DISPLAY REFRESH
+	// DISPLAY REFRESH
 	SendCommand(0x22);
 	SendData(0xF7);
 	SendCommand(0x20);
 	WaitUntilIdle();
 }
 
-void Epd::DisplayPartBaseImage(const unsigned char* frame_buffer)
+void Epd::DisplayPartBaseImage(const unsigned char *frame_buffer)
 {
-	int w = (EPD_WIDTH % 8 == 0)? (EPD_WIDTH / 8 ): (EPD_WIDTH / 8 + 1);
+	int w = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
 	int h = EPD_HEIGHT;
 
-	if (frame_buffer != NULL) {
+	if (frame_buffer != NULL)
+	{
 		SendCommand(0x24);
-		for (int j = 0; j < h; j++) {
-			for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++)
+		{
+			for (int i = 0; i < w; i++)
+			{
 				SendData(frame_buffer[i + j * w]);
 			}
 		}
 
 		SendCommand(0x26);
-		for (int j = 0; j < h; j++) {
-			for (int i = 0; i < w; i++) {
+		for (int j = 0; j < h; j++)
+		{
+			for (int i = 0; i < w; i++)
+			{
 				SendData(frame_buffer[i + j * w]);
 			}
 		}
 	}
 
-	//DISPLAY REFRESH
+	// DISPLAY REFRESH
 	SendCommand(0x22);
 	SendData(0xFF);
 	SendCommand(0x20);
@@ -264,53 +274,65 @@ void Epd::DisplayPartBaseImage(const unsigned char* frame_buffer)
 }
 void Epd::DisplayPartBaseWhiteImage(void)
 {
-	int w = (EPD_WIDTH % 8 == 0)? (EPD_WIDTH / 8 ): (EPD_WIDTH / 8 + 1);
+	int w = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
 	int h = EPD_HEIGHT;
 
 	SendCommand(0x24);
-	for (int j = 0; j < h; j++) {
-		for (int i = 0; i < w; i++) {
+	for (int j = 0; j < h; j++)
+	{
+		for (int i = 0; i < w; i++)
+		{
 			SendData(0xff);
 		}
 	}
 
 	SendCommand(0x26);
-	for (int j = 0; j < h; j++) {
-		for (int i = 0; i < w; i++) {
+	for (int j = 0; j < h; j++)
+	{
+		for (int i = 0; i < w; i++)
+		{
 			SendData(0xff);
 		}
 	}
 
-
-	//DISPLAY REFRESH
+	// DISPLAY REFRESH
 	SendCommand(0x22);
 	SendData(0xFF);
 	SendCommand(0x20);
 	WaitUntilIdle();
 }
 
-
-void Epd::DisplayPart(const unsigned char* frame_buffer)
+void Epd::DisplayPart(const unsigned char *frame_buffer)
 {
-	int w = (EPD_WIDTH % 8 == 0)? (EPD_WIDTH / 8 ): (EPD_WIDTH / 8 + 1);
+	int w = (EPD_WIDTH % 8 == 0) ? (EPD_WIDTH / 8) : (EPD_WIDTH / 8 + 1);
 	int h = EPD_HEIGHT;
 
-	if (frame_buffer != NULL) {
-		SendCommand(0x24);
-		for (int j = 0; j < h; j++) {
-			for (int i = 0; i < w; i++) {
+	if (nullptr != frame_buffer)
+	{
+		// SendCommand(0x44); // Command to set Window address in X axis
+		// SendData(0x00);
+		// SendData(0x0F);
+
+		// SendCommand(0x45); // Command to set Window address in Y axis
+		// SendData(0x00);
+		// SendData(0x7F);
+
+		SendCommand(0x24); // Command to start writing to Display RAM
+		for (int j = 0; j < h; j++)
+		{
+			for (int i = 0; i < w; i++)
+			{
 				SendData(frame_buffer[i + j * w]);
 			}
 		}
 	}
 
-	//DISPLAY REFRESH
+	// DISPLAY REFRESH
 	SendCommand(0x22);
 	SendData(0xFF);
 	SendCommand(0x20);
 	WaitUntilIdle();
 }
-
 
 /**
  *  @brief: private function to specify the memory area for data R/W
@@ -342,7 +364,6 @@ void Epd::SetMemoryPointer(int x, int y)
 	WaitUntilIdle();
 }
 
-
 /**
  *  @brief: update the display
  *          there are 2 memory areas embedded in the e-paper display
@@ -352,7 +373,7 @@ void Epd::SetMemoryPointer(int x, int y)
  */
 void Epd::DisplayFrame(void)
 {
-	//DISPLAY REFRESH
+	// DISPLAY REFRESH
 	SendCommand(0x22);
 	SendData(0xF7);
 	SendCommand(0x20);
@@ -367,36 +388,40 @@ void Epd::DisplayPartFrame(void)
 	WaitUntilIdle();
 }
 
-
 void Epd::SetFrameMemory(
-        const unsigned char* image_buffer,
-        int x,
-        int y,
-        int image_width,
-        int image_height
-)
+	const unsigned char *image_buffer,
+	int x,
+	int y,
+	int image_width,
+	int image_height)
 {
 	int x_end;
 	int y_end;
 
 	if (
-	        image_buffer == NULL ||
-	        x < 0 || image_width < 0 ||
-	        y < 0 || image_height < 0
-	) {
+		image_buffer == NULL ||
+		x < 0 || image_width < 0 ||
+		y < 0 || image_height < 0)
+	{
 		return;
 	}
 	/* x point must be the multiple of 8 or the last 3 bits will be ignored */
 	x &= 0xF8;
 	image_width &= 0xF8;
-	if (x + image_width >= this->width) {
+	if (x + image_width >= this->width)
+	{
 		x_end = this->width - 1;
-	} else {
+	}
+	else
+	{
 		x_end = x + image_width - 1;
 	}
-	if (y + image_height >= this->height) {
+	if (y + image_height >= this->height)
+	{
 		y_end = this->height - 1;
-	} else {
+	}
+	else
+	{
 		y_end = y + image_height - 1;
 	}
 	SetMemoryArea(x, y, x_end, y_end);
@@ -405,13 +430,15 @@ void Epd::SetFrameMemory(
 	// ESP_LOGI("Disp_mem", "mem_ptr @: %d, %d",x,y);
 	// SendCommand(0x24);
 	/* send the image data */
-	for (int j = 0; j < y_end - y + 1; j++) {
+	for (int j = 0; j < y_end - y + 1; j++)
+	{
 
-		SetMemoryPointer(x, y+j);
+		SetMemoryPointer(x, y + j);
 		// ESP_LOGI("Disp_mem", "mem_ptr @: %d, %d",x,y+j);
 		SendCommand(0x24);
 
-		for (int i = 0; i < (x_end - x + 1) / 8; i++) {
+		for (int i = 0; i < (x_end - x + 1) / 8; i++)
+		{
 			SendData(image_buffer[i + j * (image_width / 8)]);
 		}
 	}
@@ -427,7 +454,7 @@ void Epd::SetFrameMemory(
  */
 void Epd::Sleep()
 {
-	SendCommand(0x10); //enter deep sleep
+	SendCommand(0x10); // enter deep sleep
 	SendData(0x01);
 	DelayMs(200);
 

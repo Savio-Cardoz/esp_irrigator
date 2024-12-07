@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdint.h>
 #include "portSupervisor.h"
 #include "non_volatile_storage.h"
 #include "esp_log.h"

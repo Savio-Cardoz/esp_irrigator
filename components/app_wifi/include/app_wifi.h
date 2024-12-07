@@ -3,7 +3,7 @@
 #include <cstring>
 //#include <algorithm> 
 #include <mutex>
-
+#include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 
@@ -31,6 +31,7 @@ namespace WIFI
         static esp_err_t _init();
         static wifi_init_config_t _wifi_init_cfg;
         static wifi_config_t _wifi_cfg;
+        static wifi_config_t _wifi_ap_config;
 
         static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                        int32_t event_id, void *event_data);

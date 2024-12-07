@@ -49,7 +49,8 @@
 #define BUSY_PIN  EPD_BUSY_PIN //CONFIG_BUSY_PIN        
 
 // SPI host
-#define SPI_HOST    HSPI_HOST
+// #define APP_SPI_HOST    HSPI_HOST
+#define APP_SPI_HOST    VSPI_HOST
 
 #ifdef __cplusplus
 extern "C" {

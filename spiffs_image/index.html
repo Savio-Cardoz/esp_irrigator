@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trigger Server Event</title>
+</head>
+
+<body>
+    <form id="litresForm">
+        <label for="litresInput">Litres:</label>
+        <input type="text" id="litresInput" name="Litres">
+        <input type="submit" value="Submit">
+    </form>
+
+    <button id="triggerButton">Trigger Event</button>
+
+    <script>
+        document.getElementById("triggerButton").addEventListener("click", function () {
+            const serverAddress = `http://${window.location.hostname}/your-endpoint`;
+            fetch(serverAddress, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ message: "Button clicked!" })
+            })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error("Error:", error));
+        });
+
+        document.getElementById("litresForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+            const litresValue = document.getElementById("litresInput").value;
+            const serverAddress = `http://${window.location.hostname}/your-endpoint`;
+            fetch(serverAddress, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ litres: litresValue })
+            })
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error("Error:", error));
+        });
+    </script>
+</body>
+
+</html>

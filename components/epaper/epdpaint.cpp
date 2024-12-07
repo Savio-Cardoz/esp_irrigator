@@ -203,7 +203,7 @@ void Paint::DrawStringAt(int x, int y, const char* text, sFONT* font, int colore
     /* Send the string character by character on EPD */
     while (*p_text != 0) {
         /* Display one character on EPD */
-        ESP_LOGI("Data", "0x%x",*p_text);
+        // ESP_LOGI("Data", "0x%x",*p_text);
         DrawCharAt(refcolumn, y, *p_text, font, colored);
         /* Decrement the column position by 16 */
         refcolumn += font->Width;

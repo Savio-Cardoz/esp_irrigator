@@ -72,7 +72,7 @@ portState_t PortSupervisor::Supervisor::runPortCheck()
         time(&now);
         for (auto &port : portList)
         {
-            printf("Time now: %u, switch at: %u", static_cast<unsigned int>(now), static_cast<unsigned int>(port.getSwitchTime()));
+            // printf("Time now: %u, switch at: %u", static_cast<unsigned int>(now), static_cast<unsigned int>(port.getSwitchTime()));
             if ((port.b_portEnabled == true) && (port.getSwitchTime() <= (uint32_t)now))
             {
                 result = port.portSwitchState();

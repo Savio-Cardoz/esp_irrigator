@@ -12,6 +12,7 @@
 #include "pinmap.h"
 #include <map>
 #include <vector>
+#include <chrono>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -23,6 +24,8 @@
 /************************************************/
 #define ESP_INTR_FLAG_DEFAULT 0
 
+uint32_t flowPulseCount{0};
+
 PortSupervisor::Supervisor portMan;
 PortSupervisor::Result result = PortSupervisor::Result::ERR;
 Vault::Result res = Vault::Result::ERR;
@@ -32,16 +35,11 @@ const std::map<int, std::vector<int>> portMap{
 static QueueHandle_t gpio_evt_queue = NULL;
 
 time_t now;
-static struct timeval nowTime = {
-    .tv_sec = 1683994547,
-};
-char strftime_buf[64];
-struct tm timeinfo;
-int64_t *ptr_timeSeconds = NULL;
 
 static void IRAM_ATTR gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t)arg;
+    flowPulseCount++;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
 }
 
@@ -64,36 +62,41 @@ void Irrigator::System::initialize()
 
 WIFI::Wifi::state_e checkWifiState(WIFI::Wifi &Wifi)
 {
+    static WIFI::Wifi::state_e prevState;
     auto wifiState = WIFI::Wifi::GetState();
 
-    switch (wifiState)
+    if (prevState != wifiState)
     {
-    case WIFI::Wifi::state_e::READY_TO_CONNECT:
-        std::cout << "Wifi Status: READY_TO_CONNECT\n";
-        Wifi.Begin();
-        break;
-    case WIFI::Wifi::state_e::DISCONNECTED:
-        std::cout << "Wifi Status: DISCONNECTED\n";
-        Wifi.Begin();
-        break;
-    case WIFI::Wifi::state_e::CONNECTING:
-        std::cout << "Wifi Status: CONNECTING\n";
-        break;
-    case WIFI::Wifi::state_e::WAITING_FOR_IP:
-        std::cout << "Wifi Status: WAITING_FOR_IP\n";
-        break;
-    case WIFI::Wifi::state_e::ERROR:
-        std::cout << "Wifi Status: ERROR\n";
-        break;
-    case WIFI::Wifi::state_e::CONNECTED:
-        std::cout << "Wifi Status: CONNECTED\n";
-        break;
-    case WIFI::Wifi::state_e::NOT_INITIALIZED:
-        std::cout << "Wifi Status: NOT_INITIALIZED\n";
-        break;
-    case WIFI::Wifi::state_e::INITIALIZED:
-        std::cout << "Wifi Status: INITIALIZED\n";
-        break;
+        prevState = wifiState;
+        switch (wifiState)
+        {
+        case WIFI::Wifi::state_e::READY_TO_CONNECT:
+            std::cout << "Wifi Status: READY_TO_CONNECT\n";
+            Wifi.Begin();
+            break;
+        case WIFI::Wifi::state_e::DISCONNECTED:
+            std::cout << "Wifi Status: DISCONNECTED\n";
+            Wifi.Begin();
+            break;
+        case WIFI::Wifi::state_e::CONNECTING:
+            std::cout << "Wifi Status: CONNECTING\n";
+            break;
+        case WIFI::Wifi::state_e::WAITING_FOR_IP:
+            std::cout << "Wifi Status: WAITING_FOR_IP\n";
+            break;
+        case WIFI::Wifi::state_e::ERROR:
+            std::cout << "Wifi Status: ERROR\n";
+            break;
+        case WIFI::Wifi::state_e::CONNECTED:
+            std::cout << "Wifi Status: CONNECTED\n";
+            break;
+        case WIFI::Wifi::state_e::NOT_INITIALIZED:
+            std::cout << "Wifi Status: NOT_INITIALIZED\n";
+            break;
+        case WIFI::Wifi::state_e::INITIALIZED:
+            std::cout << "Wifi Status: INITIALIZED\n";
+            break;
+        }
     }
 
     return wifiState;
@@ -178,12 +181,19 @@ void initGpio()
     io_conf.intr_type = GPIO_INTR_POSEDGE;
     io_conf.mode = GPIO_MODE_INPUT;
     io_conf.pin_bit_mask = ((uint64_t)1 << (uint64_t)FLOW_IN);
+    io_conf.pull_up_en = gpio_pullup_t::GPIO_PULLUP_ENABLE;
     ESP_ERROR_CHECK(gpio_config(&io_conf));
 
     gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(gpioTask, "gpio_task_example", 2048, NULL, 10, NULL);
+    xTaskCreate(gpioTask, "gpioTask", 2048, NULL, 10, NULL);
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     gpio_isr_handler_add(static_cast<gpio_num_t>(FLOW_IN), gpio_isr_handler, (void *)FLOW_IN);
+}
+
+uint64_t getNowTime()
+{
+    auto timeNow = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock().now().time_since_epoch()).count();
+    return static_cast<uint64_t>(timeNow);
 }
 
 void setup(Irrigator::System &system)
@@ -236,6 +246,12 @@ extern "C" [[noreturn]] void app_main(void)
     Irrigator::System application;
     uint8_t loopCounter = 0;
     const uint8_t LOOPS = 20;
+    uint64_t prevTicks{0};
+    const uint32_t interval = 1000;
+    uint32_t countPerSecond{0};
+    double flowRate{0};
+    const float calibrationFactor = 4.5;
+    double totalFlow{0.0};
 
     setup(application);
 
@@ -258,10 +274,22 @@ extern "C" [[noreturn]] void app_main(void)
 
     // Create a output port
     PortSupervisor::Supervisor ports;
-    ports.addPort(0, 10, 120, 30, enableSolenoid, disableSolenoid);
+    ports.addPort(0, 10, 1200, 30, enableSolenoid, disableSolenoid);
 
     while (true)
     {
+        // Check flow rate
+        auto nowTicks = getNowTime();
+        printf("now: %u, prev: %u, count: %u\n", static_cast<unsigned int>(nowTicks), static_cast<unsigned int>(prevTicks), static_cast<unsigned int>(flowPulseCount));
+        if ((nowTicks - prevTicks) > interval)
+        {
+            countPerSecond = flowPulseCount;
+            flowPulseCount = 0;
+            flowRate = ((1000.0 / (getNowTime() - prevTicks)) * countPerSecond) / calibrationFactor;
+            prevTicks = getNowTime();
+            totalFlow += flowRate;
+            printf("flow: %f\n", totalFlow);
+        }
         if (0 == loopCounter)
         {
             loopCounter = LOOPS;
@@ -280,7 +308,6 @@ extern "C" [[noreturn]] void app_main(void)
                 epaperDisp.displayRefresh();
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(1000));
 
         // Manage wifi states
         if (WIFI::Wifi::state_e::CONNECTED == checkWifiState(Wifi))
@@ -306,5 +333,7 @@ extern "C" [[noreturn]] void app_main(void)
         // If elements need to be updated, refresh the display
         epaperDisp.displayRefresh();
         loopCounter--;
+
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

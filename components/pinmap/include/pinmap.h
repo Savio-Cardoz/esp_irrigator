@@ -12,6 +12,6 @@
 #define DRIVER_IN_1 18
 #define DRIVER_IN_2 19
 
-#define FLOW_IN 35
+#define FLOW_IN 21
 
 #endif

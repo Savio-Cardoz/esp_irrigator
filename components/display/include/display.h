@@ -4,14 +4,15 @@
 #include "epaper.h"
 #include "epd1in54_V2.h"
 
-#define COLORED     0
-#define UNCOLORED   1
+#define COLORED 0
+#define UNCOLORED 1
 
-class Display {
+class Display
+{
 private:
-    Epd* epd;
-    Paint* painter;
-    unsigned char* frameBuffer;
+    Epd *epd;
+    Paint *painter;
+    unsigned char *frameBuffer;
     bool dispNeedRefresh;
 
 public:
@@ -20,6 +21,8 @@ public:
     void displaySystemStatus();
     void displayRefresh();
     void updateEnvData(float humidity, float temperature);
+    void updateWifiState(bool state);
+    void updateOutputState(bool state);
 };
 
 #endif

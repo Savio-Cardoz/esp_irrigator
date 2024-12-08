@@ -6,8 +6,10 @@
 #include "esp_log.h"
 #include "port.h"
 
-namespace PortSupervisor {
-    enum Result {
+namespace PortSupervisor
+{
+    enum Result
+    {
         OK,
         ERR,
         OK_PORTLIST_NEEDS_SAVING
@@ -16,12 +18,13 @@ namespace PortSupervisor {
     /*! \class Port
         \brief Port Object class definition
 
-        This class defines attributes like port number, current state of port, 
-        required amount of flow and current flow, interval and duration of port 
+        This class defines attributes like port number, current state of port,
+        required amount of flow and current flow, interval and duration of port
         activation, pointers to functions that activate and deactivate the actual
         port.
     */
-    class Port {
+    class Port
+    {
     public:
         uint8_t portNumber_u8;
         uint32_t switchTime_u32;
@@ -34,35 +37,39 @@ namespace PortSupervisor {
         void (*closePort)(portMap_t number);
         bool b_portEnabled;
         Port(uint8_t, uint16_t, uint32_t, uint32_t, void (*)(portMap_t), void (*)(portMap_t));
-        void portSwitchState();
+
+        //! \brief  Toggles the output of the port.
+        //! \return portState_t the current state of portState_e
+        portState_t portSwitchState();
+
         void setSwitchTime(uint32_t swTime);
         uint32_t getSwitchTime();
     };
 
-    class Supervisor {
-        public:
-            std::vector<Port> portList;
-        
-            /**
-             * Add Port object to the system port list
-             * @param portNum Should be an enum.
-             * @param reqFlow uint16_t number indicating litres to be allowed to flow through.
-             * @param interval uint32_t number indicating seconds of interval between consecutive port open events.
-             * @param duration uint32_t number indicating seconds of duration for which port should remain open.
-             * @param enablePort function to open port.
-             * @param disablePort function to disable port.
-             * @returns None 
-            */
-            void addPort(uint8_t portNum, uint16_t reqFlow, uint32_t interval, uint32_t duration, void (*enablePort)(portMap_t), void (*disablePort)(portMap_t));
+    class Supervisor
+    {
+    public:
+        std::vector<Port> portList;
 
-            /*
-            */
-            PortSupervisor::Result runPortCheck();
+        /**
+         * Add Port object to the system port list
+         * @param portNum Should be an enum.
+         * @param reqFlow uint16_t number indicating litres to be allowed to flow through.
+         * @param interval uint32_t number indicating seconds of interval between consecutive port open events.
+         * @param duration uint32_t number indicating seconds of duration for which port should remain open.
+         * @param enablePort function to open port.
+         * @param disablePort function to disable port.
+         * @returns None
+         */
+        void addPort(uint8_t portNum, uint16_t reqFlow, uint32_t interval, uint32_t duration, void (*enablePort)(portMap_t), void (*disablePort)(portMap_t));
 
-            /*
-            */
-            uint32_t getNextPortTriggerTime();
+        /*
+         */
+        portState_t runPortCheck();
+
+        /*
+         */
+        uint32_t getNextPortTriggerTime();
     };
-
 
 }

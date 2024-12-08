@@ -8,6 +8,6 @@ elseif(CONFIG_EPD_2_7)
     list(APPEND srcs "epd2in7.cpp")
 endif()
 
-idf_component_register(SRCS "${srcs}"
+idf_component_register(SRCS "icons.c" "${srcs}"
                        INCLUDE_DIRS "include"
                        REQUIRES esp_common driver pinmap)

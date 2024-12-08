@@ -33,7 +33,6 @@ namespace Irrigator
 
     public:
         void initialize();
-        void checkWifiState();
         void updateEnvInfo();
 
         /**

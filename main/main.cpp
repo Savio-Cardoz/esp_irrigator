@@ -6,18 +6,30 @@
 
 #include <iostream>
 #include "dht22.hpp"
-
+#include "rom/ets_sys.h"
 #include "cJSON.h"
 #include "sampleComponent.hpp"
+#include "pinmap.h"
+#include <map>
+#include <vector>
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
 
 /***** create a sample configuration *************/
 // struct config_st config = { .portnumber = 1, .startTime = 1670000, .stopTime = 1671000, .flowQuantity = 200 };
 // struct config_st config = { 1, 1000, 1000, 100 };       // This initialization worked ??
 /************************************************/
+#define ESP_INTR_FLAG_DEFAULT 0
 
 PortSupervisor::Supervisor portMan;
 PortSupervisor::Result result = PortSupervisor::Result::ERR;
 Vault::Result res = Vault::Result::ERR;
+const std::map<int, std::vector<int>> portMap{
+    {0, {2, 18, 19}}};
+
+static QueueHandle_t gpio_evt_queue = NULL;
 
 time_t now;
 static struct timeval nowTime = {
@@ -26,6 +38,12 @@ static struct timeval nowTime = {
 char strftime_buf[64];
 struct tm timeinfo;
 int64_t *ptr_timeSeconds = NULL;
+
+static void IRAM_ATTR gpio_isr_handler(void *arg)
+{
+    uint32_t gpio_num = (uint32_t)arg;
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+}
 
 void Irrigator::System::initialize()
 {
@@ -44,42 +62,7 @@ void Irrigator::System::initialize()
     _server.init();
 }
 
-// void Irrigator::System::checkWifiState()
-// {
-//     wifiState = WIFI::Wifi::GetState();
-
-//     switch (wifiState)
-//     {
-//     case WIFI::Wifi::state_e::READY_TO_CONNECT:
-//         std::cout << "Wifi Status: READY_TO_CONNECT\n";
-//         Wifi.Begin();
-//         break;
-//     case WIFI::Wifi::state_e::DISCONNECTED:
-//         std::cout << "Wifi Status: DISCONNECTED\n";
-//         Wifi.Begin();
-//         break;
-//     case WIFI::Wifi::state_e::CONNECTING:
-//         std::cout << "Wifi Status: CONNECTING\n";
-//         break;
-//     case WIFI::Wifi::state_e::WAITING_FOR_IP:
-//         std::cout << "Wifi Status: WAITING_FOR_IP\n";
-//         break;
-//     case WIFI::Wifi::state_e::ERROR:
-//         std::cout << "Wifi Status: ERROR\n";
-//         break;
-//     case WIFI::Wifi::state_e::CONNECTED:
-//         std::cout << "Wifi Status: CONNECTED\n";
-//         break;
-//     case WIFI::Wifi::state_e::NOT_INITIALIZED:
-//         std::cout << "Wifi Status: NOT_INITIALIZED\n";
-//         break;
-//     case WIFI::Wifi::state_e::INITIALIZED:
-//         std::cout << "Wifi Status: INITIALIZED\n";
-//         break;
-//     }
-// }
-
-void checkWifiState(WIFI::Wifi &Wifi)
+WIFI::Wifi::state_e checkWifiState(WIFI::Wifi &Wifi)
 {
     auto wifiState = WIFI::Wifi::GetState();
 
@@ -112,6 +95,8 @@ void checkWifiState(WIFI::Wifi &Wifi)
         std::cout << "Wifi Status: INITIALIZED\n";
         break;
     }
+
+    return wifiState;
 }
 
 void Irrigator::System::updateEnvInfo()
@@ -143,51 +128,62 @@ void Irrigator::System::deepSleep(uint32_t sleepDuration)
 
 void enableSolenoid(portMap_t num)
 {
-    // ESP_LOGI(TAG, "Open Port: %d", (int)num);
-    // printf("Open Port: %d", (int)num);
+    printf("Open Port: %d", (int)num);
+    auto pins = portMap.find((int)num);
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(1)), 1);
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(2)), 0);
+    // Enable output
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(0)), 1);
+    ets_delay_us(6000);
+    // Disable output
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(0)), 0);
 }
 
 void disableSolenoid(portMap_t num)
 {
-    // ESP_LOGI(TAG, "Close Port: %d", (int)num);
-    // printf("Close Port: %d", (int)num);
+    printf("Close Port: %d", (int)num);
+    auto pins = portMap.find((int)num);
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(1)), 0);
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(2)), 1);
+    // Enable output
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(0)), 1);
+    ets_delay_us(6000);
+    // Disable output
+    gpio_set_level(static_cast<gpio_num_t>(pins->second.at(0)), 0);
 }
 
-void run(Irrigator::System &system)
+static void gpioTask(void *arg)
 {
-    // obtain_time();
-    // mqttStart();
-    // time(&now);
-    // localtime_r(&now, &timeinfo);
-    // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-    // // ESP_LOGI(TAG, "The current date/time is: %s ", strftime_buf);
-    // //printf("The current date/time is: %s ", strftime_buf);
+    uint32_t io_num;
+    for (;;)
+    {
+        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY))
+        {
+            printf("GPIO intr, val: %d\n", gpio_get_level(static_cast<gpio_num_t>(io_num)));
+        }
+    }
+}
 
-    // // ESP_LOGI(TAG, "time %lld", (long long)now);
-    // //printf("time %lld", (long long)now);
-    // uint32_t loop = 5;
+void initGpio()
+{
+    gpio_config_t io_conf = {0};
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = ((uint64_t)1 << (uint64_t)DRIVER_SLEEP) | ((uint64_t)1 << (uint64_t)DRIVER_IN_1) | ((uint64_t)1 << (uint64_t)DRIVER_IN_2);
+    io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
+    ESP_ERROR_CHECK(gpio_config(&io_conf));
 
-    // while(loop--) {
-    system.checkWifiState();
-    system.updateEnvInfo();
+    io_conf = {0};
+    io_conf.intr_type = GPIO_INTR_POSEDGE;
+    io_conf.mode = GPIO_MODE_INPUT;
+    io_conf.pin_bit_mask = ((uint64_t)1 << (uint64_t)FLOW_IN);
+    ESP_ERROR_CHECK(gpio_config(&io_conf));
 
-    //     result = portMan.runPortCheck();
-    //     if(result == PortSupervisor::Result::ERR) {
-    //         // ESP_LOGI(TAG, "Error running portCheck");
-    //         //printf("Error running portCheck");
-    //     }
-    //     else if(result == PortSupervisor::Result::OK_PORTLIST_NEEDS_SAVING) {
-    //         res = Vault::setVaultData(portMan);
-    //         // ESP_LOGI(TAG, "Result of Storage Write: %d", (unsigned int)res);
-    //         //printf("Result of Storage Write: %d", (unsigned int)res);
-    //     }
-
-    system.display.displayRefresh();
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    // }
-
-    // time(&now);
-    // application.deepSleep(portMan.getNextPortTriggerTime() - now);
+    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+    xTaskCreate(gpioTask, "gpio_task_example", 2048, NULL, 10, NULL);
+    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+    gpio_isr_handler_add(static_cast<gpio_num_t>(FLOW_IN), gpio_isr_handler, (void *)FLOW_IN);
 }
 
 void setup(Irrigator::System &system)
@@ -243,6 +239,8 @@ extern "C" [[noreturn]] void app_main(void)
 
     setup(application);
 
+    initGpio();
+
     // Initialize the DHT22 sensor
     Dht22 dhtSensor(4);
     int humidityOld = 0;
@@ -257,6 +255,10 @@ extern "C" [[noreturn]] void app_main(void)
     WIFI::Wifi Wifi;
     Wifi.SetCredentials("Cardoz", "8828385089");
     Wifi.Init();
+
+    // Create a output port
+    PortSupervisor::Supervisor ports;
+    ports.addPort(0, 10, 120, 30, enableSolenoid, disableSolenoid);
 
     while (true)
     {
@@ -279,7 +281,30 @@ extern "C" [[noreturn]] void app_main(void)
             }
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
-        checkWifiState(Wifi);
+
+        // Manage wifi states
+        if (WIFI::Wifi::state_e::CONNECTED == checkWifiState(Wifi))
+        {
+            epaperDisp.updateWifiState(true);
+        }
+        else
+        {
+            epaperDisp.updateWifiState(false);
+        }
+
+        // Check timings for port control
+        auto portState = ports.runPortCheck();
+        if (portState_t::OPEN == portState)
+        {
+            epaperDisp.updateOutputState(true);
+        }
+        if (portState_t::CLOSED == portState)
+        {
+            epaperDisp.updateOutputState(false);
+        }
+
+        // If elements need to be updated, refresh the display
+        epaperDisp.displayRefresh();
         loopCounter--;
     }
 }

@@ -245,7 +245,7 @@ extern "C" [[noreturn]] void app_main(void)
     std::string config;
     Irrigator::System application;
     uint8_t loopCounter = 0;
-    const uint8_t LOOPS = 20;
+    const uint8_t LOOPS = 60;
     uint64_t prevTicks{0};
     const uint32_t interval = 1000;
     uint32_t countPerSecond{0};
@@ -307,6 +307,8 @@ extern "C" [[noreturn]] void app_main(void)
                 epaperDisp.updateEnvData(dhtSensor.getHumidity(), dhtSensor.getTemperature());
                 epaperDisp.displayRefresh();
             }
+
+            epaperDisp.updateFlow(totalFlow);
         }
 
         // Manage wifi states

@@ -90,6 +90,21 @@ void Display::updateEnvData(float humidity, float temperature)
     dispNeedRefresh = true;
 }
 
+void Display::updateFlow(double flow)
+{
+    static double prevFlow;
+    if (prevFlow != flow)
+    {
+        prevFlow = flow;
+
+        static char datastr[100];
+        painter->DrawStringAt(6, 20, datastr, &segoe30, UNCOLORED); // Clear older data in display buffer
+        sprintf(datastr, "%0.2f", flow);
+        painter->DrawStringAt(6, 20, datastr, &segoe30, COLORED);
+        dispNeedRefresh = true;
+    }
+}
+
 void Display::displayRefresh()
 {
     if (dispNeedRefresh)

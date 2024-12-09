@@ -23,6 +23,7 @@ public:
     void updateEnvData(float humidity, float temperature);
     void updateWifiState(bool state);
     void updateOutputState(bool state);
+    void updateFlow(double flow);
 };
 
 #endif

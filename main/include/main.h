@@ -32,6 +32,7 @@ namespace Irrigator
         http_server _server;
 
     public:
+        void initHttpServer();
         void initialize();
         void updateEnvInfo();
 

@@ -196,6 +196,11 @@ uint64_t getNowTime()
     return static_cast<uint64_t>(timeNow);
 }
 
+void Irrigator::System::initHttpServer()
+{
+    this->_server.init();
+}
+
 void setup(Irrigator::System &system)
 {
     Vault::Result res = Vault::Result::ERR;
@@ -275,6 +280,8 @@ extern "C" [[noreturn]] void app_main(void)
     // Create a output port
     PortSupervisor::Supervisor ports;
     ports.addPort(0, 10, 1200, 30, enableSolenoid, disableSolenoid);
+
+    application.initHttpServer();
 
     while (true)
     {

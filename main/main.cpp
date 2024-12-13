@@ -8,7 +8,6 @@
 #include "dht22.hpp"
 #include "rom/ets_sys.h"
 #include "cJSON.h"
-#include "sampleComponent.hpp"
 #include "pinmap.h"
 #include <map>
 #include <vector>
@@ -23,6 +22,7 @@
 // struct config_st config = { 1, 1000, 1000, 100 };       // This initialization worked ??
 /************************************************/
 #define ESP_INTR_FLAG_DEFAULT 0
+#define MAIN_LOOP_INTERVAL 100
 
 uint32_t flowPulseCount{0};
 
@@ -89,6 +89,7 @@ WIFI::Wifi::state_e checkWifiState(WIFI::Wifi &Wifi)
             break;
         case WIFI::Wifi::state_e::CONNECTED:
             std::cout << "Wifi Status: CONNECTED\n";
+            obtain_time();
             break;
         case WIFI::Wifi::state_e::NOT_INITIALIZED:
             std::cout << "Wifi Status: NOT_INITIALIZED\n";
@@ -192,7 +193,7 @@ void initGpio()
 
 uint64_t getNowTime()
 {
-    auto timeNow = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock().now().time_since_epoch()).count();
+    auto timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock().now().time_since_epoch()).count();
     return static_cast<uint64_t>(timeNow);
 }
 
@@ -247,12 +248,13 @@ void setup(Irrigator::System &system)
 
 extern "C" [[noreturn]] void app_main(void)
 {
+    const uint32_t interval = 10 * (MAIN_LOOP_INTERVAL * 10);
+    const uint32_t LOOPS = 60 * (MAIN_LOOP_INTERVAL * 10);
+    uint32_t sleepInterval = 1200;
     std::string config;
     Irrigator::System application;
     uint8_t loopCounter = 0;
-    const uint8_t LOOPS = 60;
     uint64_t prevTicks{0};
-    const uint32_t interval = 1000;
     uint32_t countPerSecond{0};
     double flowRate{0};
     const float calibrationFactor = 4.5;
@@ -342,7 +344,15 @@ extern "C" [[noreturn]] void app_main(void)
         // If elements need to be updated, refresh the display
         epaperDisp.displayRefresh();
         loopCounter--;
+        sleepInterval--;
 
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(MAIN_LOOP_INTERVAL));
+
+        printf("sleep %u", static_cast<unsigned int>(sleepInterval));
+
+        if (0 == sleepInterval)
+        {
+            application.deepSleep(300);
+        }
     }
 }

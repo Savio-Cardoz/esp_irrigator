@@ -1,26 +1,6 @@
-#include <string>
-#include <iostream>
-#include <vector>
-
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "nvs_flash.h"
-#include "esp_log.h"
-
 #include "app_wifi.h"
 #include "dht20.h"
 #include "display.h"
-
-#include <time.h>
-#include <sys/time.h>
-#include "soc/rtc.h"
-
-#include "sdkconfig.h"
-#include "soc/soc_caps.h"
-#include "esp_sleep.h"
-#include "driver/adc.h"
-#include "driver/rtc_io.h"
-#include "http_server.h"
 
 namespace Irrigator
 {
@@ -29,10 +9,8 @@ namespace Irrigator
     private:
         static uint8_t count;
         uint32_t sleepEnterTime;
-        http_server _server;
 
     public:
-        void initHttpServer();
         void initialize();
         void updateEnvInfo();
 

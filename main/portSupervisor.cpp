@@ -4,7 +4,7 @@
 #include "vault.h"
 #include <stdio.h>
 
-static const char *TAG = "PortSupervisor";
+#include "cJSON.h"
 
 PortSupervisor::Port::Port(uint8_t x, uint16_t y, uint32_t a, uint32_t b, void (*f1)(portMap_t), void (*f2)(portMap_t))
 {
@@ -55,8 +55,6 @@ void PortSupervisor::Supervisor::addPort(uint8_t portNum, uint16_t reqFlow, uint
     time_t now;
     uint32_t switchTime;
     time(&now);
-    // ESP_LOGI(TAG, "Port %d added to List at time: %d", portNum, (uint32_t)now);
-    // printf("Port %d added to List at time: %lu", portNum, (uint32_t)now);
     switchTime = (uint32_t)now + interval;
     portList.push_back(Port{portNum, reqFlow, interval, duration, enPort, disPort});
     portList.back().setSwitchTime(switchTime);
@@ -95,4 +93,14 @@ uint32_t PortSupervisor::Supervisor::getNextPortTriggerTime()
         }
     }
     return nextTriggerTime;
+}
+
+void PortSupervisor::Supervisor::updatePortConfig(const char *buffer)
+{
+    cJSON *root = cJSON_Parse(buffer);
+    portList[0].interval = cJSON_GetObjectItem(root, "interval")->valueint;
+    portList[0].duration = cJSON_GetObjectItem(root, "duration")->valueint;
+
+    printf("Updated config: Interval: %u, Duration: %u", static_cast<unsigned int>(portList[0].interval), static_cast<unsigned int>(portList[0].duration));
+    Vault::setVaultData(*this);
 }

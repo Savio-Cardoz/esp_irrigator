@@ -9,6 +9,8 @@
 #include "rom/ets_sys.h"
 #include "cJSON.h"
 #include "pinmap.h"
+#include "vault.h"
+
 #include <map>
 #include <vector>
 #include <chrono>
@@ -16,11 +18,19 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
+#include "port.h"
 
-/***** create a sample configuration *************/
-// struct config_st config = { .portnumber = 1, .startTime = 1670000, .stopTime = 1671000, .flowQuantity = 200 };
-// struct config_st config = { 1, 1000, 1000, 100 };       // This initialization worked ??
-/************************************************/
+#include <time.h>
+#include <sys/time.h>
+#include "soc/rtc.h"
+
+#include "sdkconfig.h"
+#include "soc/soc_caps.h"
+#include "esp_sleep.h"
+#include "driver/adc.h"
+#include "driver/rtc_io.h"
+#include "http_server.h"
+
 #define ESP_INTR_FLAG_DEFAULT 0
 #define MAIN_LOOP_INTERVAL 100
 
@@ -36,7 +46,14 @@ static QueueHandle_t gpio_evt_queue = NULL;
 
 time_t now;
 
-static void IRAM_ATTR gpio_isr_handler(void *arg)
+http_server *http_server::httpServerInstance = nullptr;
+std::mutex http_server::mutexHttpServer;
+
+// Function prototypes
+void configurationParser(const char *buf);
+
+static void IRAM_ATTR
+gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t)arg;
     flowPulseCount++;
@@ -56,8 +73,6 @@ void Irrigator::System::initialize()
     I2C i2c_comm;
     i2c_comm.init(I2C_NUM_0, 5, 4, 100000);
     this->env_sensor.init(i2c_comm);
-
-    _server.init();
 }
 
 WIFI::Wifi::state_e checkWifiState(WIFI::Wifi &Wifi)
@@ -124,7 +139,6 @@ uint32_t Irrigator::System::getSleepEnterTime()
 
 void Irrigator::System::deepSleep(uint32_t sleepDuration)
 {
-    // ESP_LOGI(TAG, "Entering Deep Sleep for: %lu secs", sleepDuration);
     // printf("Entering Deep Sleep for: %lu secs", sleepDuration);
     esp_sleep_enable_timer_wakeup(sleepDuration * 1000000);
     esp_deep_sleep_start();
@@ -168,6 +182,29 @@ static void gpioTask(void *arg)
     }
 }
 
+void configurationParser(const char *buf)
+{
+    // cJSON *root = cJSON_Parse(buf);
+    // int red = cJSON_GetObjectItem(root, "red")->valueint;
+    // int green = cJSON_GetObjectItem(root, "green")->valueint;
+    // int blue = cJSON_GetObjectItem(root, "blue")->valueint;
+    // printf("Light control: red = %d, green = %d, blue = %d", red, green, blue);
+    // cJSON_Delete(root);
+
+    // st_portConfig config[1]; // For a single port
+
+    // config[0].e_portState = port.portState_e;
+    // config[0].u8_portNumber = port.portNumber_u8;
+    // config[0].u32_switchTime = port.switchTime_u32;
+    // config[0].u32_interval = port.interval;
+    // config[0].u32_duration = port.duration;
+    // config[0].u16_flowLitresRequired = port.flowLitresRequired_u16;
+
+    // nvs_write_chunk(VAULT_CONFIG_KEY, config, sizeof(config));
+
+    // nvs_write_u32(VAULT_INITIALIZED, initializationKey);
+}
+
 void initGpio()
 {
     gpio_config_t io_conf = {0};
@@ -197,14 +234,16 @@ uint64_t getNowTime()
     return static_cast<uint64_t>(timeNow);
 }
 
-void Irrigator::System::initHttpServer()
+void initHttpServer()
 {
-    this->_server.init();
+    // Iniialize a singleton of the http_server
+    http_server &server = http_server::getInstance();
+    server.init();
+    server.registerConfigParser(configurationParser);
 }
 
 void setup(Irrigator::System &system)
 {
-    Vault::Result res = Vault::Result::ERR;
     esp_event_loop_create_default();
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -216,8 +255,6 @@ void setup(Irrigator::System &system)
     }
     ESP_ERROR_CHECK(err);
 
-    // system.initialize();
-
     // if(ESP_RST_DEEPSLEEP != esp_reset_reason())
     // {
     //     /** setup time*/
@@ -227,23 +264,6 @@ void setup(Irrigator::System &system)
     //     // if(rc == 0) {
     //     //     //printf("settimeofday() successful.\n");
     //     // }
-
-    //     /**
-    //      * Get Port list from config. Update port list into object instance
-    //      * Pass the parameters from a config file readout here
-    //      */
-    //     portMan.addPort(1, 200, 200, 100, enableSolenoid, disableSolenoid);
-
-    //     res = Vault::setVaultData(portMan);
-    //     // ESP_LOGI(TAG, "Result of Storage Write: %d", (unsigned int)res);
-    //     //printf("Result of Storage Write: %d", (unsigned int)res);
-    // }
-
-    // res = Vault::getVaultData(portMan);
-    // // ESP_LOGI(TAG, "Result of Storage Read: %d", (unsigned int)res);
-    // //printf("Result of Storage Read: %d", (unsigned int)res);
-
-    // // rtc_gpio_isolate(GPIO_NUM_12);   // Disabled as it is interfering with Epaper display - Check use
 }
 
 extern "C" [[noreturn]] void app_main(void)
@@ -253,7 +273,7 @@ extern "C" [[noreturn]] void app_main(void)
     uint32_t sleepInterval = 1200;
     std::string config;
     Irrigator::System application;
-    uint8_t loopCounter = 0;
+    uint32_t loopCounter = 0;
     uint64_t prevTicks{0};
     uint32_t countPerSecond{0};
     double flowRate{0};
@@ -281,9 +301,12 @@ extern "C" [[noreturn]] void app_main(void)
 
     // Create a output port
     PortSupervisor::Supervisor ports;
-    ports.addPort(0, 10, 1200, 30, enableSolenoid, disableSolenoid);
+    Vault::getVaultData(ports);
 
-    application.initHttpServer();
+    initHttpServer();
+
+    http_server &server = http_server::getInstance();
+    server.registerObserver(&ports);
 
     while (true)
     {
@@ -339,6 +362,7 @@ extern "C" [[noreturn]] void app_main(void)
         if (portState_t::CLOSED == portState)
         {
             epaperDisp.updateOutputState(false);
+            Vault::setVaultData(ports);
         }
 
         // If elements need to be updated, refresh the display

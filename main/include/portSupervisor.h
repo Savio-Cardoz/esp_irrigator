@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include "esp_log.h"
 #include "port.h"
+#include "observerPattern.hpp"
 
 namespace PortSupervisor
 {
@@ -46,7 +47,7 @@ namespace PortSupervisor
         uint32_t getSwitchTime();
     };
 
-    class Supervisor
+    class Supervisor : public Observer
     {
     public:
         std::vector<Port> portList;
@@ -67,9 +68,11 @@ namespace PortSupervisor
          */
         portState_t runPortCheck();
 
-        /*
-         */
+        //! \brief  Iterate through the list of ports, finding the port that is next to be switched and return the time to the switch
+        //! \return uint32_t seconds to next port switch
         uint32_t getNextPortTriggerTime();
+
+        void updatePortConfig(const char *buffer) override;
     };
 
 }

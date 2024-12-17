@@ -5,9 +5,13 @@
 #include "non_volatile_storage.h"
 #include "esp_log.h"
 
-namespace Vault {
-    
-    enum Result {
+#define VAULT_CONFIG_KEY "configuration"
+
+namespace Vault
+{
+
+    enum Result
+    {
         OK,
         ERR,
         ERR_ALLOCATION,
@@ -18,11 +22,12 @@ namespace Vault {
         ERR_READ
     };
 
-    enum Options {
+    enum Options
+    {
         READ,
         STORE
     };
-    
-    Vault::Result getVaultData(PortSupervisor::Supervisor& portManager);
-    Vault::Result setVaultData(const PortSupervisor::Supervisor& portManager);
+
+    Vault::Result getVaultData(PortSupervisor::Supervisor &portManager);
+    Vault::Result setVaultData(const PortSupervisor::Supervisor &portManager);
 }

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+#include <string>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -10,10 +10,8 @@
 #include "esp_vfs.h"
 #include <ctime>
 #include <chrono>
-
 #include "http_server.h"
 
-const char *TAG = "http_server";
 static const char *REST_TAG = "esp-rest";
 
 #define SCRATCH_BUFSIZE (10240)
@@ -47,7 +45,6 @@ static esp_err_t get_req_handler(httpd_req_t *req)
 static esp_err_t get_ico_handler(httpd_req_t *req)
 {
     int response;
-    ESP_LOGI(TAG, "Toggle output request received");
     auto response_bytes = getFileContents("icon.ico");
     response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
     return response;
@@ -57,8 +54,9 @@ static esp_err_t getSystemTime(httpd_req_t *req)
 {
     int response;
     std::time_t today_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::string timeString(std::ctime(&today_time));
-    response = httpd_resp_send(req, timeString.c_str(), timeString.size());
+    char timeString[21];
+    std::strftime(timeString, 20, "%FT%TZ", std::gmtime(&today_time));
+    response = httpd_resp_send(req, timeString, 20);
     return response;
 }
 
@@ -87,12 +85,9 @@ static esp_err_t updateConfigHandler(httpd_req_t *req)
     }
     buf[total_len] = '\0';
 
-    cJSON *root = cJSON_Parse(buf);
-    int red = cJSON_GetObjectItem(root, "red")->valueint;
-    int green = cJSON_GetObjectItem(root, "green")->valueint;
-    int blue = cJSON_GetObjectItem(root, "blue")->valueint;
-    ESP_LOGI(REST_TAG, "Light control: red = %d, green = %d, blue = %d", red, green, blue);
-    cJSON_Delete(root);
+    http_server &serverInstance = http_server::getInstance();
+    serverInstance.notifyObserver(buf);
+
     httpd_resp_sendstr(req, "Post control value successfully");
     return ESP_OK;
 }
@@ -145,4 +140,9 @@ void http_server::init()
 {
     Storage spiffsStorage("/spiffs");
     _server = setup_websocket_server();
+}
+
+void http_server::registerConfigParser(std::function<void(const char *buffer)> const &function)
+{
+    this->cb_configParser = function;
 }

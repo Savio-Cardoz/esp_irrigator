@@ -20,6 +20,7 @@ public:
     void displayOutline();
     void displaySystemStatus();
     void displayRefresh();
+    void portSwitchTime(uint32_t switchTime_u32);
     void updateEnvData(float humidity, float temperature);
     void updateWifiState(bool state);
     void updateOutputState(bool state);

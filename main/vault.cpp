@@ -1,4 +1,7 @@
 #include "vault.h"
+#include <chrono>
+#include <iomanip>
+#include <ctime>
 
 #define VAULT_INITIALIZED "Initialization_Code"
 #define NUMBER_OF_PORTS "numberOfPorts"
@@ -43,11 +46,20 @@ Vault::Result Vault::getVaultData(PortSupervisor::Supervisor &portManager)
         portManager.portList.back().setSwitchTime(portConfig[i].u32_switchTime);
         portManager.portList.back().portState_e = portConfig[i].e_portState;
 
+        time_t rawtime = static_cast<unsigned int>(portConfig[i].u32_switchTime);
+        struct tm ts;
+        char buf[80];
+
+        // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+        ts = *localtime(&rawtime);
+        strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+        printf("%s\n", buf);
+
         printf("Added port: %d, Interval: %u, Duration: %u switch at: %u\n",
                portConfig[i].u8_portNumber,
-               static_cast<unsigned int>(portConfig[i].u32_switchTime),
                static_cast<unsigned int>(portConfig[i].u32_interval),
-               static_cast<unsigned int>(portConfig[i].u32_duration));
+               static_cast<unsigned int>(portConfig[i].u32_duration),
+               static_cast<unsigned int>(portConfig[i].u32_switchTime));
     }
 
     return Vault::Result::OK;

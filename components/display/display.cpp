@@ -81,6 +81,23 @@ void Display::updateOutputState(bool state)
     }
 }
 
+void Display::portSwitchTime(uint32_t switchTime_u32)
+{
+    time_t rawtime = static_cast<unsigned int>(switchTime_u32);
+    struct tm ts;
+    char buf[80];
+
+    // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+    ts = *localtime(&rawtime);
+    strftime(buf, sizeof(buf), "%a %H:%M", &ts);
+    painter->DrawStringAt(6, 100, buf, &segoe30, UNCOLORED);
+    painter->DrawStringAt(6, 100, buf, &segoe30, COLORED);
+    memset(buf, 0, sizeof(buf));
+    strftime(buf, sizeof(buf), "%d-%m-%Y", &ts);
+    painter->DrawStringAt(6, 123, buf, &segoe30, UNCOLORED);
+    painter->DrawStringAt(6, 123, buf, &segoe30, COLORED);
+}
+
 void Display::updateEnvData(float humidity, float temperature)
 {
     static char datastr[20];

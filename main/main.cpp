@@ -3,6 +3,7 @@
 #include "vault.h"
 #include "sntp.h"
 #include "mqtt.h"
+#include "esp_log.h"
 
 #include <iostream>
 #include "dht22.hpp"
@@ -31,8 +32,11 @@
 #include "driver/rtc_io.h"
 #include "http_server.h"
 
+#include "mdns.h"
+
 #define ESP_INTR_FLAG_DEFAULT 0
 #define MAIN_LOOP_INTERVAL 100
+#define MDNS_INSTANCE "esp home web server"
 
 uint32_t flowPulseCount{0};
 
@@ -228,10 +232,40 @@ void initGpio()
     gpio_isr_handler_add(static_cast<gpio_num_t>(FLOW_IN), gpio_isr_handler, (void *)FLOW_IN);
 }
 
-uint64_t getNowTime()
+uint32_t getNowTime()
 {
     auto timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock().now().time_since_epoch()).count();
-    return static_cast<uint64_t>(timeNow);
+    return static_cast<uint32_t>(timeNow);
+}
+
+void updateSwitchTimes(PortSupervisor::Supervisor ports)
+{
+    auto timeNow = static_cast<uint32_t>(getNowTime());
+    for (auto port : ports.portList)
+    {
+        auto portSwitchTime = port.getSwitchTime();
+        while (portSwitchTime < timeNow)
+        {
+            portSwitchTime = portSwitchTime + port.interval;
+        }
+        port.setSwitchTime(portSwitchTime);
+    }
+}
+
+static void initialise_mdns(void)
+{
+    // initialize mDNS service
+    esp_err_t err = mdns_init();
+    if (err)
+    {
+        printf("MDNS Init failed: %d\n", err);
+        return;
+    }
+
+    // set hostname
+    mdns_hostname_set("my-esp32");
+    // set default instance
+    mdns_instance_name_set("Jhon's ESP32 Thing");
 }
 
 void initHttpServer()
@@ -255,15 +289,16 @@ void setup(Irrigator::System &system)
     }
     ESP_ERROR_CHECK(err);
 
-    // if(ESP_RST_DEEPSLEEP != esp_reset_reason())
+    // if (ESP_RST_DEEPSLEEP != esp_reset_reason())
     // {
-    //     /** setup time*/
-    //     // setenv("TZ", "IST-5:30", 1);
-    //     // tzset();
-    //     // int rc = settimeofday(&nowTime, NULL);
-    //     // if(rc == 0) {
-    //     //     //printf("settimeofday() successful.\n");
-    //     // }
+    /** setup time*/
+    setenv("TZ", "IST-5:30", 1);
+    tzset();
+    // int rc = settimeofday(&nowTime, NULL);
+    // if (rc == 0)
+    // {
+    //     // printf("settimeofday() successful.\n");
+    // }
 }
 
 extern "C" [[noreturn]] void app_main(void)
@@ -274,7 +309,7 @@ extern "C" [[noreturn]] void app_main(void)
     std::string config;
     Irrigator::System application;
     uint32_t loopCounter = 0;
-    uint64_t prevTicks{0};
+    uint32_t prevTicks{0};
     uint32_t countPerSecond{0};
     double flowRate{0};
     const float calibrationFactor = 4.5;
@@ -294,6 +329,8 @@ extern "C" [[noreturn]] void app_main(void)
     epaperDisp.displayOutline();
     epaperDisp.displayRefresh();
 
+    initialise_mdns();
+
     /** Setup Wifi  */
     WIFI::Wifi Wifi;
     Wifi.SetCredentials("Cardoz", "8828385089");
@@ -302,6 +339,7 @@ extern "C" [[noreturn]] void app_main(void)
     // Create a output port
     PortSupervisor::Supervisor ports;
     Vault::getVaultData(ports);
+    epaperDisp.portSwitchTime(ports.portList[0].switchTime_u32);
 
     initHttpServer();
 
@@ -362,6 +400,7 @@ extern "C" [[noreturn]] void app_main(void)
         if (portState_t::CLOSED == portState)
         {
             epaperDisp.updateOutputState(false);
+            epaperDisp.portSwitchTime(ports.portList[0].switchTime_u32);
             Vault::setVaultData(ports);
         }
 
@@ -376,7 +415,26 @@ extern "C" [[noreturn]] void app_main(void)
 
         if (0 == sleepInterval)
         {
-            application.deepSleep(300);
+            auto timeNow = getNowTime();
+            auto triggerTime = ports.getNextPortTriggerTime();
+
+            ESP_LOGI("Main", "Time now: %lu, Trigger at: %lu", timeNow, triggerTime);
+
+            if ((triggerTime > timeNow) && (3600 > (triggerTime - timeNow))) //  Possibly find the greater and then substract
+            {
+                // printf("Going to sleep for: %u secs", static_cast<unsigned int>(triggerTime - timeNow));
+                ESP_LOGI("Main", "Sleep:  %u secs", static_cast<unsigned int>(triggerTime - timeNow));
+                application.deepSleep(triggerTime - timeNow);
+            }
+            else if (triggerTime < timeNow)
+            {
+                updateSwitchTimes(ports);
+            }
+            else
+            {
+                ESP_LOGI("Main", "Sleep: 3600 secs");
+                application.deepSleep(3600);
+            }
         }
     }
 }

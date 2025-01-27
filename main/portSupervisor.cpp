@@ -3,6 +3,7 @@
 #include "portSupervisor.h"
 #include "vault.h"
 #include <stdio.h>
+#include <chrono>
 
 #include "cJSON.h"
 
@@ -32,20 +33,35 @@ uint32_t PortSupervisor::Port::getSwitchTime()
 
 portState_t PortSupervisor::Port::portSwitchState()
 {
-    time_t now;
-    time(&now);
+    auto timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock().now().time_since_epoch()).count();
 
     if (portState_e == CLOSED)
     {
         portState_e = OPEN;
         openPort(PORT_1);
-        switchTime_u32 = now + duration;
+        switchTime_u32 = timeNow + duration;
+        time_t rawtime = static_cast<unsigned int>(switchTime_u32);
+        struct tm ts;
+        char buf[80];
+
+        // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+        ts = *localtime(&rawtime);
+        strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+        printf("Next switch at: %u | %s\n", static_cast<unsigned int>(switchTime_u32), buf);
     }
     else if (portState_e == OPEN)
     {
         portState_e = CLOSED;
         closePort(PORT_1);
-        switchTime_u32 = now + interval;
+        switchTime_u32 = timeNow + interval;
+        time_t rawtime = static_cast<unsigned int>(switchTime_u32);
+        struct tm ts;
+        char buf[80];
+
+        // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+        ts = *localtime(&rawtime);
+        strftime(buf, sizeof(buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+        printf("Next switch at: %u | %s\n", static_cast<unsigned int>(switchTime_u32), buf);
     }
     return portState_e;
 }
@@ -80,7 +96,8 @@ portState_t PortSupervisor::Supervisor::runPortCheck()
     return result;
 }
 
-uint32_t PortSupervisor::Supervisor::getNextPortTriggerTime()
+uint32_t
+PortSupervisor::Supervisor::getNextPortTriggerTime()
 {
     uint32_t nextTriggerTime = 0xFFFFFFFF;
     uint32_t portSwitchTime = 0;

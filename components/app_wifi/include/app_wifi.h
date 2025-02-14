@@ -1,14 +1,14 @@
 #pragma once
 
 #include <cstring>
-//#include <algorithm> 
+// #include <algorithm>
 #include <mutex>
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 
-//#include "lwip/err.h" // Needed for NTP
-//#include "lwip/sys.h" // Needed for NTP
+// #include "lwip/err.h" // Needed for NTP
+// #include "lwip/sys.h" // Needed for NTP
 
 namespace WIFI
 {
@@ -52,6 +52,11 @@ namespace WIFI
 
         constexpr static const state_e &GetState(void) { return _state; }
         constexpr static const char *GetMac(void) { return _mac_addr_cstr; }
+
+        //! \brief  Get the number of WiFi Stations connected to the ESP
+        //! \param  None
+        //! \return int Number of stations connected
+        static int isStationConnected();
     }; // Wifi class
 
 } // namaspace WIFI

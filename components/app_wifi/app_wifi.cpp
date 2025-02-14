@@ -183,13 +183,13 @@ namespace WIFI
             {
                 // _wifi_ap_config.ap.ssid = CONFIG_ESP_WIFI_AP_SSID;
                 // _wifi_ap_config.ap.password = CONFIG_ESP_WIFI_AP_PASSWORD;
-                
+
                 std::string apSsid(CONFIG_ESP_WIFI_AP_SSID);
                 std::string apPassword(CONFIG_ESP_WIFI_AP_PASSWORD);
 
                 memcpy(_wifi_ap_config.ap.ssid, apSsid.c_str(), apSsid.length());
                 memcpy(_wifi_ap_config.ap.password, apPassword.c_str(), apPassword.length());
-                
+
                 _wifi_ap_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
                 _wifi_ap_config.ap.max_connection = 2;
                 status = esp_wifi_set_config(WIFI_IF_AP, &_wifi_ap_config);
@@ -244,6 +244,20 @@ namespace WIFI
         }
 
         return status;
+    }
+
+    int Wifi::isStationConnected()
+    {
+        int stationsConnected = 0;
+        wifi_sta_list_t station;
+
+        if (ESP_OK == esp_wifi_ap_get_sta_list(&station))
+        {
+            stationsConnected = station.num;
+            printf("\r\n%d Stations are connected\r\n", stationsConnected);
+        }
+
+        return stationsConnected;
     }
 
 } // namespace WIFI

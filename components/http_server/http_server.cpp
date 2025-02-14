@@ -50,6 +50,30 @@ static esp_err_t get_ico_handler(httpd_req_t *req)
     return response;
 }
 
+static esp_err_t getBootstrapMinCss(httpd_req_t *req)
+{
+    int response;
+    auto response_bytes = getFileContents("bootstrap.min.css");
+    response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
+    return response;
+}
+
+static esp_err_t getJqueryMinJs(httpd_req_t *req)
+{
+    int response;
+    auto response_bytes = getFileContents("jquery.min.js");
+    response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
+    return response;
+}
+
+static esp_err_t getBootstrapBundleMinJs(httpd_req_t *req)
+{
+    int response;
+    auto response_bytes = getFileContents("bootstrap.bundle.min.js");
+    response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
+    return response;
+}
+
 static esp_err_t getSystemTime(httpd_req_t *req)
 {
     int response;
@@ -125,12 +149,33 @@ static httpd_handle_t setup_websocket_server(void)
         .handler = getSystemTime,
         .user_ctx = NULL};
 
+    httpd_uri_t jquery_min_js = {
+        .uri = "/jquery.min.js",
+        .method = HTTP_GET,
+        .handler = getJqueryMinJs,
+        .user_ctx = NULL};
+
+    httpd_uri_t bootstrapBundleMinJs = {
+        .uri = "/bootstrap.bundle.min.js",
+        .method = HTTP_GET,
+        .handler = getBootstrapBundleMinJs,
+        .user_ctx = NULL};
+
+    httpd_uri_t bootstrapMinCss = {
+        .uri = "/bootstrap.min.css",
+        .method = HTTP_GET,
+        .handler = getBootstrapMinCss,
+        .user_ctx = NULL};
+
     if (httpd_start(&server, &config) == ESP_OK)
     {
         httpd_register_uri_handler(server, &uri_get);
         httpd_register_uri_handler(server, &uri_toggle_output_button);
         httpd_register_uri_handler(server, &uri_get_ico);
         httpd_register_uri_handler(server, &uri_system_time);
+        httpd_register_uri_handler(server, &jquery_min_js);
+        httpd_register_uri_handler(server, &bootstrapBundleMinJs);
+        httpd_register_uri_handler(server, &bootstrapMinCss);
     }
 
     return server;

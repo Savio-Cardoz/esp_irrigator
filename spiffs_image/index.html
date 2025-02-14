@@ -2,51 +2,191 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trigger Server Event</title>
+    <title>Bootstrap Example</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="jquery.min.js"></script>
+    <script src="bootstrap.bundle.min.js"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="bootstrap.min.css"> -->
+
+    <style>
+        footer {
+            text-align: center;
+            padding: 3px;
+            background-color: darkolivegreen;
+            color: whitesmoke;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+        }
+    </style>
+
 </head>
 
 <body>
-    <form id="litresForm">
-        <label for="litresInput">Litres:</label>
-        <input type="text" id="litresInput" name="Litres">
-        <input type="submit" value="Submit">
-    </form>
 
-    <button id="triggerButton">Trigger Event</button>
+    <nav class="navbar navbar-expand-md navbar-inverse navbar-fixed-top bg-dark">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                    aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Home</a></li>
+                    <li><a href="#">Setup</a></li>
+                </ul>
+            </div>
+        </div>
 
-    <script>
-        document.getElementById("triggerButton").addEventListener("click", function () {
-            const serverAddress = `http://${window.location.hostname}/your-endpoint`;
-            fetch(serverAddress, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ message: "Button clicked!" })
-            })
-                .then(response => response.json())
-                .then(data => console.log(data))
-                .catch(error => console.error("Error:", error));
-        });
+    </nav>
+    <br><br><br>
 
-        document.getElementById("litresForm").addEventListener("submit", function (event) {
-            event.preventDefault();
-            const litresValue = document.getElementById("litresInput").value;
-            const serverAddress = `http://${window.location.hostname}/your-endpoint`;
-            fetch(serverAddress, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ litres: litresValue })
-            })
-                .then(response => response.json())
-                .then(data => console.log(data))
-                .catch(error => console.error("Error:", error));
-        });
-    </script>
+    <div class="container">
+        <h2>Fluid dispensation timings</h2>
+        <h3>Port 1</h3>
+        <div class="port1_settings">
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1">Interval</span>
+                </div>
+                <input id="prt1_interval" value=" " type="text" class="form-control" placeholder="Hour(s)" disabled>
+                <div class="input-group-append interval_button">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown"> Set
+                        interval</button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-header">Hour(s)</div>
+                        <div class='option' id='option1'>1</div>
+                        <div class='option' id='option2'>2</div>
+                        <div class='option' id='option3'>3</div>
+                        <div class='option' id='option4'>4</div>
+                        <div class='option' id='option5'>5</div>
+                        <div class='option' id='option6'>6</div>
+                        <div class='option' id='option7'>7</div>
+                        <div class='option' id='option8'>8</div>
+                        <div class='option' id='option9'>9</div>
+                        <div class='option' id='option10'>10</div>
+                        <div class='option' id='option11'>11</div>
+                        <div class='option' id='option12'>12</div>
+                        <div class='option' id='option13'>24</div>
+                        <div class='option' id='option14'>48</div>
+                        <div class='option' id='option15'>72</div>
+                        <div class="dropdown-header">Week</div>
+                        <div class='option' id='option16'>1</div>
+                        <div class='option' id='option17'>2</div>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1">Duration</span>
+                </div>
+                <input id="prt1_duration" value=" " type="text" class="form-control" placeholder="Hour(s)" disabled>
+                <div class="input-group-append duration_button">
+                    <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown"> Set
+                        Duration</button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-header">Minute(s)</div>
+                        <div class='option' id='option1'>1</div>
+                        <div class='option' id='option2'>2</div>
+                        <div class='option' id='option3'>3</div>
+                        <div class='option' id='option4'>4</div>
+                        <div class='option' id='option5'>5</div>
+                        <div class='option' id='option6'>10</div>
+                        <div class='option' id='option7'>15</div>
+                        <div class='option' id='option8'>20</div>
+                        <div class='option' id='option9'>30</div>
+                        <div class='option' id='option10'>45</div>
+                        <div class='option' id='option11'>60</div>
+                        </ul>
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary btn-save" type="button" onclick=save_configuration()>Save</button>
+                </div>
+            </div>
+            <p></p>
+            <h3>Port 2</h3>
+        </div>
+
+        <div class="container">
+            <p></p>
+            <h2>Flow Control</h2>
+            <label type="text" id="flow_state" value="..."></label>
+            <button type="button" class="btn btn-lg" onclick="power_click()" id="power_button" value="Getting State">
+                <span class="glyphicon glyphicon-off"></span> Power
+            </button>
+        </div>
+
+        <p id="demo"></p>
+
+        <script>
+            var configuration = {};
+
+            // This should really be unnecessary. Load once at document load and then maybe whenever the button is pressed.
+            // But then it also shows current state of valve.
+            // setInterval(function() {
+            // // Call a function repetatively with 2 Second interval
+            // get_state();
+            // }, 2000); //2000mSeconds update rat
+
+            function get_state() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function () {
+                    if (this.readyState == 4 && this.status == 200) {
+                        if (this.responseText == "ON") {
+                            document.getElementById("power_button").setAttribute("class", "btn btn-lg btn-danger active");
+                            document.getElementById("power_button").setAttribute("value", "Turn OFF");
+                        }
+                        else if (this.responseText == "OFF") {
+                            document.getElementById("power_button").setAttribute("class", "btn btn-lg btn-success active");
+                            document.getElementById("power_button").setAttribute("value", "Turn ON");
+                        }
+                    }
+                }
+                xhttp.open("GET", "get_state", true);
+                xhttp.send();
+            };
+
+            setInterval(function () {
+                get_time();
+            }, 1000);
+
+            function get_time() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function () {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.getElementById("footer_time").innerHTML = this.responseText;
+                    }
+                }
+                xhttp.open("GET", "get_time", true);
+                xhttp.send();
+            };
+
+        </script>
+
+        <script>
+            function power_click() {
+                var button_attribute = document.getElementById("power_button").getAttribute("class");
+                button_attribute.replace("active", "disabled");
+                document.getElementById("power_button").setAttribute("class", button_attribute);
+
+                var xhttp = new XMLHttpRequest();
+                xhttp.open("GET", "toggle_power", true);
+                xhttp.send();
+            }
+        </script>
+
+        <!-- <script src="scripts.js"></script> -->
+
+        <footer>
+            <p id="footer_time"></p>
+        </footer>
+
 </body>
 
 </html>

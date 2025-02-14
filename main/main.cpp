@@ -413,6 +413,12 @@ extern "C" [[noreturn]] void app_main(void)
 
         printf("sleep %u", static_cast<unsigned int>(sleepInterval));
 
+        if (0 != WIFI::Wifi::isStationConnected())
+        {
+            // delay sleep if a station is connected to the ESP
+            sleepInterval = 1200;
+        }
+
         if (0 == sleepInterval)
         {
             auto timeNow = getNowTime();

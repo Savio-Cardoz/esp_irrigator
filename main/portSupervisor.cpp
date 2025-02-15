@@ -38,6 +38,7 @@ portState_t PortSupervisor::Port::portSwitchState()
     if (portState_e == CLOSED)
     {
         portState_e = OPEN;
+        flowLitresCurrent_u16 = 0;
         openPort(PORT_1);
         switchTime_u32 = timeNow + duration;
         time_t rawtime = static_cast<unsigned int>(switchTime_u32);
@@ -86,8 +87,11 @@ portState_t PortSupervisor::Supervisor::runPortCheck()
         time(&now);
         for (auto &port : portList)
         {
-            // printf("Time now: %u, switch at: %u", static_cast<unsigned int>(now), static_cast<unsigned int>(port.getSwitchTime()));
             if ((port.b_portEnabled == true) && (port.getSwitchTime() <= (uint32_t)now))
+            {
+                result = port.portSwitchState();
+            }
+            if ((portState_t::OPEN == port.portState_e) && (port.flowLitresCurrent_u16 >= port.flowLitresRequired_u16))
             {
                 result = port.portSwitchState();
             }
@@ -115,9 +119,13 @@ PortSupervisor::Supervisor::getNextPortTriggerTime()
 void PortSupervisor::Supervisor::updatePortConfig(const char *buffer)
 {
     cJSON *root = cJSON_Parse(buffer);
-    portList[0].interval = cJSON_GetObjectItem(root, "interval")->valueint;
-    portList[0].duration = cJSON_GetObjectItem(root, "duration")->valueint;
+    if (nullptr != root)
+    {
+        portList[0].interval = cJSON_GetObjectItem(root, "interval")->valueint;
+        portList[0].duration = cJSON_GetObjectItem(root, "duration")->valueint;
+        portList[0].flowLitresRequired_u16 = cJSON_GetObjectItem(root, "quantity")->valueint;
 
-    printf("Updated config: Interval: %u, Duration: %u", static_cast<unsigned int>(portList[0].interval), static_cast<unsigned int>(portList[0].duration));
-    Vault::setVaultData(*this);
+        printf("Updated config: Interval: %u, Duration: %u, Qty: %d\r\n", static_cast<unsigned int>(portList[0].interval), static_cast<unsigned int>(portList[0].duration), portList[0].flowLitresRequired_u16);
+        Vault::setVaultData(*this);
+    }
 }

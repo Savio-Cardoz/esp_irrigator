@@ -86,11 +86,13 @@ void Display::portSwitchTime(uint32_t switchTime_u32)
     time_t rawtime = static_cast<unsigned int>(switchTime_u32);
     struct tm ts;
     char buf[80];
+    memset(buf, 0, sizeof(buf));
 
     // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
     ts = *localtime(&rawtime);
     strftime(buf, sizeof(buf), "%a %H:%M", &ts);
-    painter->DrawStringAt(6, 100, buf, &segoe30, UNCOLORED);
+    painter->DrawFilledRectangle(6, 125, 110, 105, UNCOLORED);
+    // painter->DrawStringAt(6, 100, buf, &segoe30, UNCOLORED);
     painter->DrawStringAt(6, 100, buf, &segoe30, COLORED);
     memset(buf, 0, sizeof(buf));
     strftime(buf, sizeof(buf), "%d-%m-%Y", &ts);
@@ -116,7 +118,7 @@ void Display::updateFlow(double flow)
 
         static char datastr[100];
         painter->DrawStringAt(6, 20, datastr, &segoe30, UNCOLORED); // Clear older data in display buffer
-        sprintf(datastr, "%0.2f", flow);
+        sprintf(datastr, "Fl: %0.2f l", flow);
         painter->DrawStringAt(6, 20, datastr, &segoe30, COLORED);
         dispNeedRefresh = true;
     }
@@ -130,4 +132,13 @@ void Display::displayRefresh()
         epd->DisplayPart(frameBuffer);
         dispNeedRefresh = false;
     }
+}
+
+void Display::updateDesiredFlow(uint16_t flow)
+{
+    static char datastr[20];
+    painter->DrawStringAt(6, 20, datastr, &segoe30, UNCOLORED); // Clear older data in display buffer
+    sprintf(datastr, "SF: %d l", flow);
+    painter->DrawStringAt(6, 1, datastr, &segoe30, COLORED);
+    dispNeedRefresh = true;
 }

@@ -25,6 +25,7 @@ public:
     void updateWifiState(bool state);
     void updateOutputState(bool state);
     void updateFlow(double flow);
+    void updateDesiredFlow(uint16_t flow);
 };
 
 #endif

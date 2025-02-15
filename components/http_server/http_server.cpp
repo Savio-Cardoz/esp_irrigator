@@ -11,6 +11,7 @@
 #include <ctime>
 #include <chrono>
 #include "http_server.h"
+#include <time.h>
 
 static const char *REST_TAG = "esp-rest";
 
@@ -50,26 +51,18 @@ static esp_err_t get_ico_handler(httpd_req_t *req)
     return response;
 }
 
-static esp_err_t getBootstrapMinCss(httpd_req_t *req)
+static esp_err_t getScripts(httpd_req_t *req)
 {
     int response;
-    auto response_bytes = getFileContents("bootstrap.min.css");
+    auto response_bytes = getFileContents("scripts.js");
     response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
     return response;
 }
 
-static esp_err_t getJqueryMinJs(httpd_req_t *req)
+static esp_err_t getConfig(httpd_req_t *req)
 {
     int response;
-    auto response_bytes = getFileContents("jquery.min.js");
-    response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
-    return response;
-}
-
-static esp_err_t getBootstrapBundleMinJs(httpd_req_t *req)
-{
-    int response;
-    auto response_bytes = getFileContents("bootstrap.bundle.min.js");
+    auto response_bytes = getFileContents("config.json");
     response = httpd_resp_send(req, response_bytes.data(), response_bytes.size());
     return response;
 }
@@ -79,7 +72,7 @@ static esp_err_t getSystemTime(httpd_req_t *req)
     int response;
     std::time_t today_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     char timeString[21];
-    std::strftime(timeString, 20, "%FT%TZ", std::gmtime(&today_time));
+    std::strftime(timeString, 20, "%T %F", std::gmtime(&today_time));
     response = httpd_resp_send(req, timeString, 20);
     return response;
 }
@@ -144,27 +137,21 @@ static httpd_handle_t setup_websocket_server(void)
         .user_ctx = NULL};
 
     httpd_uri_t uri_system_time = {
-        .uri = "/systemTime",
+        .uri = "/get_time",
         .method = HTTP_GET,
         .handler = getSystemTime,
         .user_ctx = NULL};
 
-    httpd_uri_t jquery_min_js = {
-        .uri = "/jquery.min.js",
+    httpd_uri_t uri_scripts = {
+        .uri = "/scripts.js",
         .method = HTTP_GET,
-        .handler = getJqueryMinJs,
+        .handler = getScripts,
         .user_ctx = NULL};
 
-    httpd_uri_t bootstrapBundleMinJs = {
-        .uri = "/bootstrap.bundle.min.js",
+    httpd_uri_t uri_getConfig = {
+        .uri = "/getConfig",
         .method = HTTP_GET,
-        .handler = getBootstrapBundleMinJs,
-        .user_ctx = NULL};
-
-    httpd_uri_t bootstrapMinCss = {
-        .uri = "/bootstrap.min.css",
-        .method = HTTP_GET,
-        .handler = getBootstrapMinCss,
+        .handler = getConfig,
         .user_ctx = NULL};
 
     if (httpd_start(&server, &config) == ESP_OK)
@@ -173,9 +160,8 @@ static httpd_handle_t setup_websocket_server(void)
         httpd_register_uri_handler(server, &uri_toggle_output_button);
         httpd_register_uri_handler(server, &uri_get_ico);
         httpd_register_uri_handler(server, &uri_system_time);
-        httpd_register_uri_handler(server, &jquery_min_js);
-        httpd_register_uri_handler(server, &bootstrapBundleMinJs);
-        httpd_register_uri_handler(server, &bootstrapMinCss);
+        httpd_register_uri_handler(server, &uri_scripts);
+        httpd_register_uri_handler(server, &uri_getConfig);
     }
 
     return server;

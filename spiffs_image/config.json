@@ -1,11 +1,5 @@
 {
-    "ports": [
-        {
-            "number": "1",
-            "interval": "1",
-            "interval_type": "hour",
-            "duration": "1",
-            "duration_type": "minute"
-        }
-    ]
+    "interval": 1,
+    "duration": 1,
+    "quantity": 10
 }

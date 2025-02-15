@@ -254,7 +254,6 @@ namespace WIFI
         if (ESP_OK == esp_wifi_ap_get_sta_list(&station))
         {
             stationsConnected = station.num;
-            printf("\r\n%d Stations are connected\r\n", stationsConnected);
         }
 
         return stationsConnected;

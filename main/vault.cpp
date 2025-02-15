@@ -37,14 +37,17 @@ Vault::Result Vault::getVaultData(PortSupervisor::Supervisor &portManager)
     for (uint8_t i = 0; i < portListSize; i++)
     {
         portManager.addPort(portConfig[i].u8_portNumber,
-                            portConfig[i].u16_flowLitresRequired,
+                            // portConfig[i].u16_flowLitresRequired,
+                            3, // TODO: 3 ltrs test only
                             portConfig[i].u32_interval,
-                            portConfig[i].u32_duration,
+                            // portConfig[i].u32_duration,
+                            300,
                             enableSolenoid,
                             disableSolenoid);
 
         portManager.portList.back().setSwitchTime(portConfig[i].u32_switchTime);
         portManager.portList.back().portState_e = portConfig[i].e_portState;
+        portManager.portList.back().flowLitresCurrent_u16 = portConfig[i].u16_flowLitresCurrent;
 
         time_t rawtime = static_cast<unsigned int>(portConfig[i].u32_switchTime);
         struct tm ts;
@@ -83,6 +86,7 @@ Vault::Result Vault::setVaultData(const PortSupervisor::Supervisor &portManager)
         config[portCounter].u32_interval = port.interval;
         config[portCounter].u32_duration = port.duration;
         config[portCounter].u16_flowLitresRequired = port.flowLitresRequired_u16;
+        config[portCounter].u16_flowLitresCurrent = port.flowLitresCurrent_u16;
         portCounter++;
     }
 

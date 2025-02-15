@@ -305,7 +305,7 @@ extern "C" [[noreturn]] void app_main(void)
 {
     const uint32_t interval = 10 * (MAIN_LOOP_INTERVAL * 10);
     const uint32_t LOOPS = 60 * (MAIN_LOOP_INTERVAL * 10);
-    uint32_t sleepInterval = 1200;
+    uint32_t sleepInterval = 3000;
     std::string config;
     Irrigator::System application;
     uint32_t loopCounter = 0;
@@ -340,6 +340,7 @@ extern "C" [[noreturn]] void app_main(void)
     PortSupervisor::Supervisor ports;
     Vault::getVaultData(ports);
     epaperDisp.portSwitchTime(ports.portList[0].switchTime_u32);
+    epaperDisp.updateDesiredFlow(ports.portList[0].flowLitresRequired_u16);
 
     initHttpServer();
 
@@ -350,16 +351,19 @@ extern "C" [[noreturn]] void app_main(void)
     {
         // Check flow rate
         auto nowTicks = getNowTime();
-        printf("now: %u, prev: %u, count: %u\n", static_cast<unsigned int>(nowTicks), static_cast<unsigned int>(prevTicks), static_cast<unsigned int>(flowPulseCount));
-        if ((nowTicks - prevTicks) > interval)
+        printf("now: %u, prev: %u, Flow: %d\n", static_cast<unsigned int>(nowTicks), static_cast<unsigned int>(prevTicks), ports.portList[0].flowLitresCurrent_u16);
+
+        // Update flow quantity every 60 seconds
+        if ((nowTicks - prevTicks) > 60)
         {
             countPerSecond = flowPulseCount;
             flowPulseCount = 0;
-            flowRate = ((1000.0 / (getNowTime() - prevTicks)) * countPerSecond) / calibrationFactor;
+            flowRate = ((1.0 / (getNowTime() - prevTicks)) * countPerSecond) / calibrationFactor;
             prevTicks = getNowTime();
-            totalFlow += flowRate;
-            printf("flow: %f\n", totalFlow);
+            ports.portList[0].flowLitresCurrent_u16 += static_cast<uint16_t>(flowRate);
+            epaperDisp.updateFlow(static_cast<double>(ports.portList[0].flowLitresCurrent_u16));
         }
+
         if (0 == loopCounter)
         {
             loopCounter = LOOPS;
@@ -377,8 +381,6 @@ extern "C" [[noreturn]] void app_main(void)
                 epaperDisp.updateEnvData(dhtSensor.getHumidity(), dhtSensor.getTemperature());
                 epaperDisp.displayRefresh();
             }
-
-            epaperDisp.updateFlow(totalFlow);
         }
 
         // Manage wifi states
@@ -413,9 +415,9 @@ extern "C" [[noreturn]] void app_main(void)
 
         printf("sleep %u", static_cast<unsigned int>(sleepInterval));
 
+        // delay sleep if a station is connected to the ESP
         if (0 != WIFI::Wifi::isStationConnected())
         {
-            // delay sleep if a station is connected to the ESP
             sleepInterval = 1200;
         }
 

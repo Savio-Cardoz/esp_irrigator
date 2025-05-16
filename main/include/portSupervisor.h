@@ -73,6 +73,8 @@ namespace PortSupervisor
         uint32_t getNextPortTriggerTime();
 
         void updatePortConfig(const char *buffer) override;
+
+        void updateSwitchTimes();
     };
 
 }

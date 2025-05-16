@@ -98,6 +98,7 @@ void Display::portSwitchTime(uint32_t switchTime_u32)
     strftime(buf, sizeof(buf), "%d-%m-%Y", &ts);
     painter->DrawStringAt(6, 123, buf, &segoe30, UNCOLORED);
     painter->DrawStringAt(6, 123, buf, &segoe30, COLORED);
+    dispNeedRefresh = true;
 }
 
 void Display::updateEnvData(float humidity, float temperature)

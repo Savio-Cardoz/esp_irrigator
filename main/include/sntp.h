@@ -1,8 +1,8 @@
 #pragma once
 
-
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #include <time.h>
@@ -12,9 +12,10 @@ extern "C" {
 #include "esp_log.h"
 #include "esp_sntp.h"
 
-void time_sync_notification_cb(struct timeval *tv);
-void initialize_sntp(void);
-void obtain_time(void);
+    void time_sync_notification_cb(struct timeval *tv);
+    void initialize_sntp(void);
+    void obtain_time(void);
+    void registerEventHandler(void (*eventHandler)(struct timeval *));
 
 #ifdef __cplusplus
 }

@@ -50,8 +50,11 @@ static QueueHandle_t gpio_evt_queue = NULL;
 
 time_t now;
 
+PortSupervisor::Supervisor *activePorts;
+
 http_server *http_server::httpServerInstance = nullptr;
 std::mutex http_server::mutexHttpServer;
+bool f_systemTimeUpdated = false;
 
 // Function prototypes
 void configurationParser(const char *buf);
@@ -77,6 +80,17 @@ void Irrigator::System::initialize()
     I2C i2c_comm;
     i2c_comm.init(I2C_NUM_0, 5, 4, 100000);
     this->env_sensor.init(i2c_comm);
+}
+
+uint32_t getNowTime()
+{
+    auto timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock().now().time_since_epoch()).count();
+    return static_cast<uint32_t>(timeNow);
+}
+
+void timeUpdateNotif(struct timeval *newTime)
+{
+    f_systemTimeUpdated = true;
 }
 
 WIFI::Wifi::state_e checkWifiState(WIFI::Wifi &Wifi)
@@ -108,6 +122,7 @@ WIFI::Wifi::state_e checkWifiState(WIFI::Wifi &Wifi)
             break;
         case WIFI::Wifi::state_e::CONNECTED:
             std::cout << "Wifi Status: CONNECTED\n";
+            registerEventHandler(&timeUpdateNotif);
             obtain_time();
             break;
         case WIFI::Wifi::state_e::NOT_INITIALIZED:
@@ -143,7 +158,6 @@ uint32_t Irrigator::System::getSleepEnterTime()
 
 void Irrigator::System::deepSleep(uint32_t sleepDuration)
 {
-    // printf("Entering Deep Sleep for: %lu secs", sleepDuration);
     esp_sleep_enable_timer_wakeup(sleepDuration * 1000000);
     esp_deep_sleep_start();
 }
@@ -230,26 +244,6 @@ void initGpio()
     xTaskCreate(gpioTask, "gpioTask", 2048, NULL, 10, NULL);
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     gpio_isr_handler_add(static_cast<gpio_num_t>(FLOW_IN), gpio_isr_handler, (void *)FLOW_IN);
-}
-
-uint32_t getNowTime()
-{
-    auto timeNow = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock().now().time_since_epoch()).count();
-    return static_cast<uint32_t>(timeNow);
-}
-
-void updateSwitchTimes(PortSupervisor::Supervisor ports)
-{
-    auto timeNow = static_cast<uint32_t>(getNowTime());
-    for (auto port : ports.portList)
-    {
-        auto portSwitchTime = port.getSwitchTime();
-        while (portSwitchTime < timeNow)
-        {
-            portSwitchTime = portSwitchTime + port.interval;
-        }
-        port.setSwitchTime(portSwitchTime);
-    }
 }
 
 static void initialise_mdns(void)
@@ -341,6 +335,7 @@ extern "C" [[noreturn]] void app_main(void)
     Vault::getVaultData(ports);
     epaperDisp.portSwitchTime(ports.portList[0].switchTime_u32);
     epaperDisp.updateDesiredFlow(ports.portList[0].flowLitresRequired_u16);
+    activePorts = &ports;
 
     initHttpServer();
 
@@ -349,6 +344,16 @@ extern "C" [[noreturn]] void app_main(void)
 
     while (true)
     {
+        if (true == f_systemTimeUpdated)
+        {
+            printf("\nUpdating port switch Times\n");
+            ports.updateSwitchTimes();
+            f_systemTimeUpdated = false;
+            epaperDisp.updateOutputState(false);
+            epaperDisp.portSwitchTime(ports.portList[0].switchTime_u32);
+            Vault::setVaultData(ports);
+        }
+
         // Check flow rate
         auto nowTicks = getNowTime();
         printf("now: %u, prev: %u, Flow: %d\n", static_cast<unsigned int>(nowTicks), static_cast<unsigned int>(prevTicks), ports.portList[0].flowLitresCurrent_u16);
@@ -436,7 +441,8 @@ extern "C" [[noreturn]] void app_main(void)
             }
             else if (triggerTime < timeNow)
             {
-                updateSwitchTimes(ports);
+                ports.updateSwitchTimes();
+                sleepInterval = 3000;
             }
             else
             {

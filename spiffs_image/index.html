@@ -55,8 +55,8 @@
         });
 
         function updateConfig() {
-            var interval = document.getElementById("intervalInput").value;
-            var duration = document.getElementById("durationInput").value;
+            var interval = (document.getElementById("intervalInput").value * 60 * 60);  // Convert to hours
+            var duration = (document.getElementById("durationInput").value * 60);       // Convert to minutes
             var quantity = document.getElementById("quantityInput").value;
 
             configuration.interval = Number(interval);

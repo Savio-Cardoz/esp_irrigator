@@ -1,6 +1,9 @@
 #include <string>
 #include <algorithm>
-#include "app_wifi.h"
+#include "app_wifi.hpp"
+#include "esp_log.h"
+
+static const char *TAG = "WIFI";
 
 namespace WIFI
 {
@@ -260,3 +263,49 @@ namespace WIFI
     }
 
 } // namespace WIFI
+
+void checkWifiState(void *pvParameters)
+{
+    auto Wifi = static_cast<WIFI::Wifi *>(pvParameters);
+    static WIFI::Wifi::state_e prevState;
+    WIFI::Wifi::state_e wifiState;
+
+    wifiState = WIFI::Wifi::GetState();
+
+    if (prevState != wifiState)
+    {
+        prevState = wifiState;
+        switch (wifiState)
+        {
+        case WIFI::Wifi::state_e::READY_TO_CONNECT:
+            ESP_LOGI(TAG, "Wifi Status: READY_TO_CONNECT");
+            Wifi->Begin();
+            break;
+        case WIFI::Wifi::state_e::DISCONNECTED:
+            ESP_LOGI(TAG, "Wifi Status: DISCONNECTED");
+            Wifi->Begin();
+            break;
+        case WIFI::Wifi::state_e::CONNECTING:
+            ESP_LOGI(TAG, "Wifi Status: CONNECTING");
+            break;
+        case WIFI::Wifi::state_e::WAITING_FOR_IP:
+            ESP_LOGI(TAG, "Wifi Status: WAITING_FOR_IP");
+            break;
+        case WIFI::Wifi::state_e::ERROR:
+            ESP_LOGI(TAG, "Wifi Status: ERROR");
+            break;
+        case WIFI::Wifi::state_e::CONNECTED:
+            ESP_LOGI(TAG, "Wifi Status: CONNECTED");
+            break;
+        case WIFI::Wifi::state_e::NOT_INITIALIZED:
+            ESP_LOGI(TAG, "Wifi Status: NOT_INITIALIZED");
+            break;
+        case WIFI::Wifi::state_e::INITIALIZED:
+            ESP_LOGI(TAG, "Wifi Status: INITIALIZED");
+            break;
+        default:
+            ESP_LOGI(TAG, "Wifi Status: UNKNOWN");
+            break;
+        }
+    }
+}

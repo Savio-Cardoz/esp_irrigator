@@ -1,4 +1,4 @@
-menu "WiFi interface Configuration"
+menu "Application Configuration"
     config ESP_WIFI_STA_SSID
         string "WiFi STA SSID"
         default "my-ssid"
@@ -22,4 +22,16 @@ menu "WiFi interface Configuration"
         default "my-ap-password"
         help
             WiFi password (WPA or WPA2) for the Soft AP.        
+
+    config EXAMPLE_I2C_MASTER_SDA
+        int "SDA GPIO for I2C"
+        default 19
+        help
+            GPIO pin for SDA   
+
+    config EXAMPLE_I2C_MASTER_SCL
+        int "SCL GPIO for I2C"
+        default 18
+        help
+            GPIO pin for SCL
 endmenu

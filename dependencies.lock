@@ -1,6 +1,6 @@
 dependencies:
-  espressif/mdns:
-    component_hash: f5267872ed0c810d1b281c41a567cace7b3a3695c0df9dff89f631e9ba426ed0
+  espressif/esp_lcd_ssd1681:
+    component_hash: 692a56d5ff07554e8e9e7b1abe2a811d0dab81fcd354dc08d12ce28cbbaf45e1
     dependencies:
     - name: idf
       require: private
@@ -8,14 +8,22 @@ dependencies:
     source:
       registry_url: https://components.espressif.com/
       type: service
-    version: 1.4.2
+    version: 0.1.0
   idf:
     source:
       type: idf
-    version: 5.2.2
+    version: 5.4.1
+  lvgl/lvgl:
+    component_hash: 948bff879a345149b83065535bbc4a026ce9f47498a22881e432a264b9098015
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 8.3.11
 direct_dependencies:
-- espressif/mdns
+- espressif/esp_lcd_ssd1681
 - idf
-manifest_hash: 5c9b5d1c7e215efa0c5588484ef0de1d38e5349e46173168a65ef08cb960b438
+- lvgl/lvgl
+manifest_hash: 214e93d044e03f616661a69ec2efc120fb759eb732bf7ad6eb319c4eb11ca23c
 target: esp32
 version: 2.0.0

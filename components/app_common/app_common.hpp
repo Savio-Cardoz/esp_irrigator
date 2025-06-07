@@ -1,6 +1,7 @@
 #ifndef APP_COMMON_HPP
 #define APP_COMMON_HPP
 
+#include "non_volatile_storage.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_log.h>
@@ -11,6 +12,15 @@ enum class appWifiState
     DISCONNECTED,
     CONNECTING,
     DISCONNECTING
+};
+
+struct configData
+{
+    unsigned int interval;
+    unsigned int duration;
+    unsigned int quantity;
+    unsigned long long nextAlarmTime;
+    unsigned long long lastAlarmTime;
 };
 
 class application
@@ -46,6 +56,20 @@ public:
     appWifiState getWifiState()
     {
         return _wifiState;
+    }
+
+    void readConfig(configData &portConfig)
+    {
+        esp_err_t err = nvs_read_chunk("config", &portConfig, sizeof(portConfig));
+        if (err != ESP_OK)
+        {
+            ESP_LOGE("app_common", "Failed to read config: %s", esp_err_to_name(err));
+        }
+    }
+
+    void writeConfig(const configData &portConfig)
+    {
+        nvs_write_chunk("config", &portConfig, sizeof(portConfig));
     }
 };
 

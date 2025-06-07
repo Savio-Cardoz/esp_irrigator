@@ -78,6 +78,7 @@ std::queue<struct tm> timeQueue;
 
 extern "C" [[noreturn]] void app_main(void)
 {
+    configData portConfiguration;
     application &app = application::getInstance();
 
     ESP_ERROR_CHECK(i2cdev_init());
@@ -113,7 +114,18 @@ extern "C" [[noreturn]] void app_main(void)
 
     xTaskCreate(run_clock_task, "ds3231_test", configMINIMAL_STACK_SIZE * 3, &app, 5, NULL);
 
-    int counter = 0;
+    portConfiguration.interval = 100;
+    portConfiguration.duration = 50;
+    portConfiguration.quantity = 10;
+    portConfiguration.nextAlarmTime = 1000000;
+    app.writeConfig(portConfiguration);
+
+    // Read configuration from non-volatile storage
+    app.readConfig(portConfiguration);
+    ESP_LOGI(TAG, "Configuration: Interval: %u, Duration: %u, Quantity: %u, Next Alarm Time: %llu, Last Alarm Time: %llu",
+             portConfiguration.interval, portConfiguration.duration, portConfiguration.quantity,
+             portConfiguration.nextAlarmTime, portConfiguration.lastAlarmTime);
+
     display_init();
 
     lv_obj_t *timer_label = lv_label_create(lv_scr_act());

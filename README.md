@@ -15,6 +15,7 @@ The application is built using the ESP-IDF sdk, v5.2.2. It is targeted towards b
 - esp-idf extension for vscode (optional)
 
 ### Update Log
-Made the http server class use a singleton design pattern. The http_server also inherits a Subject class with a registerObserver method. This method is used to intialize a member observer to call the port Supervisor objects updateConfig method. This allows updates to the port configuration when a payload is received via the http /config endpoint.
-
+- Display time on epaper 1.54
+- Integrate lvgl with epaper
+- Updates RTC hardware DS3231 with time from NTP server
 

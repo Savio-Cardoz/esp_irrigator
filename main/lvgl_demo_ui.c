@@ -15,7 +15,6 @@ static void set_value(void *indic, int32_t v)
     lv_meter_set_indicator_end_value(meter, indic, v);
 }
 
-
 void example_lvgl_demo_ui(lv_disp_t *disp)
 {
     meter = lv_meter_create(lv_scr_act());
@@ -30,9 +29,9 @@ void example_lvgl_demo_ui(lv_disp_t *disp)
 
     /*Create another scale for the hours. It's only visual and contains only major ticks*/
     lv_meter_scale_t *scale_hour = lv_meter_add_scale(meter);
-    lv_meter_set_scale_ticks(meter, scale_hour, 12, 0, 0, lv_palette_main(LV_PALETTE_BLUE));               /*12 ticks*/
-    lv_meter_set_scale_major_ticks(meter, scale_hour, 1, 2, 20, lv_palette_main(LV_PALETTE_BLUE), 10);    /*Every tick is major*/
-    lv_meter_set_scale_range(meter, scale_hour, 1, 12, 330, 300);       /*[1..12] values in an almost full circle*/
+    lv_meter_set_scale_ticks(meter, scale_hour, 12, 0, 0, lv_palette_main(LV_PALETTE_BLUE));           /*12 ticks*/
+    lv_meter_set_scale_major_ticks(meter, scale_hour, 1, 2, 20, lv_palette_main(LV_PALETTE_BLUE), 10); /*Every tick is major*/
+    lv_meter_set_scale_range(meter, scale_hour, 1, 12, 330, 300);                                      /*[1..12] values in an almost full circle*/
 
     LV_IMG_DECLARE(img_hand)
 
@@ -46,12 +45,12 @@ void example_lvgl_demo_ui(lv_disp_t *disp)
     lv_anim_set_exec_cb(&a, set_value);
     lv_anim_set_values(&a, 0, 60);
     lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
-    lv_anim_set_time(&a, 60000 * 30);     /* 60 * 30 sec for 1 turn, 30 sec for 1 move of the minute hand*/
+    lv_anim_set_time(&a, 60000 * 30); /* 60 * 30 sec for 1 turn, 30 sec for 1 move of the minute hand*/
     lv_anim_set_var(&a, indic_min);
     lv_anim_start(&a);
 
     lv_anim_set_var(&a, indic_hour);
-    lv_anim_set_time(&a, 60000 * 60 * 10);    /*36000 sec for 1 turn, 600 sec for 1 move of the hour hand*/
+    lv_anim_set_time(&a, 60000 * 60 * 10); /*36000 sec for 1 turn, 600 sec for 1 move of the hour hand*/
     lv_anim_set_values(&a, 0, 60);
     lv_anim_start(&a);
 }
